@@ -35,3 +35,20 @@ CREATE TABLE IF NOT EXISTS user_progress (
 CREATE INDEX IF NOT EXISTS idx_topics_category ON topics(category_id);
 CREATE INDEX IF NOT EXISTS idx_progress_user ON user_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_progress_status ON user_progress(user_id, status);
+
+CREATE TABLE IF NOT EXISTS drill_sessions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+  question_count INTEGER NOT NULL,
+  correct_count INTEGER NOT NULL DEFAULT 0,
+  missed_count INTEGER NOT NULL DEFAULT 0,
+  accuracy NUMERIC(5, 2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_drills_user_recent
+  ON drill_sessions(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_drills_user_best
+  ON drill_sessions(user_id, accuracy DESC, correct_count DESC);
+
