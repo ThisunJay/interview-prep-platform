@@ -11,6 +11,9 @@ type DeckProps = {
   rightLabel?: string;
   leftStatus: "skipped" | "failed";
   rightStatus: "studied" | "correct";
+  /** Category progress: completed so far / total topics */
+  completedCount?: number;
+  totalCount?: number;
   onComplete: (stats: { right: number; left: number }) => void;
 };
 
@@ -21,12 +24,17 @@ export function TopicDeck({
   rightLabel,
   leftStatus,
   rightStatus,
+  completedCount,
+  totalCount,
   onComplete,
 }: DeckProps) {
   const [index, setIndex] = useState(0);
   const [stats, setStats] = useState({ right: 0, left: 0 });
   const [busy, setBusy] = useState(false);
+  const [completed, setCompleted] = useState(completedCount ?? 0);
 
+  const useCategoryProgress =
+    typeof completedCount === "number" && typeof totalCount === "number";
   const remaining = topics.length - index;
   const current = topics[index];
 
@@ -52,6 +60,9 @@ export function TopicDeck({
       }
 
       setStats(nextStats);
+      if (direction === "right" && useCategoryProgress) {
+        setCompleted((c) => c + 1);
+      }
 
       if (index + 1 >= topics.length) {
         onComplete(nextStats);
@@ -60,7 +71,17 @@ export function TopicDeck({
       }
       setBusy(false);
     },
-    [busy, current, index, leftStatus, onComplete, rightStatus, stats, topics.length]
+    [
+      busy,
+      current,
+      index,
+      leftStatus,
+      onComplete,
+      rightStatus,
+      stats,
+      topics.length,
+      useCategoryProgress,
+    ]
   );
 
   if (!current) {
@@ -75,7 +96,9 @@ export function TopicDeck({
     <div className="flex h-full min-h-0 flex-col">
       <div className="mb-3 flex shrink-0 items-center justify-between px-1 text-sm text-[var(--muted)]">
         <span>
-          {index + 1} / {topics.length}
+          {useCategoryProgress
+            ? `${completed} / ${totalCount}`
+            : `${index + 1} / ${topics.length}`}
         </span>
         <span>{remaining} left</span>
       </div>

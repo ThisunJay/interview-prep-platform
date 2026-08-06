@@ -31,6 +31,8 @@ export default function StudyPage() {
   const params = useParams<{ id: string }>();
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [categoryName, setCategoryName] = useState("");
+  const [topicTotal, setTopicTotal] = useState(0);
+  const [studiedCount, setStudiedCount] = useState(0);
   const [mode, setMode] = useState<Mode>("loading");
   const [stats, setStats] = useState({ right: 0, left: 0 });
   const [filter, setFilter] = useState<"all" | "unstudied">("unstudied");
@@ -59,6 +61,8 @@ export default function StudyPage() {
       if (cancelled) return;
 
       setCategoryName(cat?.name ?? "Category");
+      setTopicTotal(Number(cat?.topic_count ?? 0));
+      setStudiedCount(Number(cat?.studied_count ?? 0));
       const list = (topicsData.topics ?? []) as TopicRow[];
       setTopics(list);
 
@@ -174,14 +178,17 @@ export default function StudyPage() {
 
         {mode === "deck" && topics.length > 0 && (
           <TopicDeck
-            key={`deck-${topics.length}-${topics[0].id}`}
+            key={`deck-${studiedCount}-${topics.length}-${topics[0].id}`}
             topics={topics}
             leftLabel="Skip"
             rightLabel="Studied"
             leftStatus="skipped"
             rightStatus="studied"
+            completedCount={studiedCount}
+            totalCount={topicTotal}
             onComplete={(s) => {
               setStats(s);
+              setStudiedCount((c) => c + s.right);
               setMode("done");
             }}
           />
