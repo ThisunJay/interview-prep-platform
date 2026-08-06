@@ -64,18 +64,24 @@ export function TopicDeck({
   );
 
   if (!current) {
-    return null;
+    return (
+      <div className="panel p-5 text-sm text-[var(--muted)]">
+        No topic to show.
+      </div>
+    );
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-3 flex items-center justify-between px-1 text-sm text-[var(--muted)]">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="mb-3 flex shrink-0 items-center justify-between px-1 text-sm text-[var(--muted)]">
         <span>
           {index + 1} / {topics.length}
         </span>
         <span>{remaining} left</span>
       </div>
-      <div className="relative min-h-0 flex-1">
+
+      {/* Explicit height so absolute swipe cards are visible */}
+      <div className="relative min-h-0 w-full flex-1">
         <AnimatePresence mode="wait">
           <SwipeCard
             key={current.id}
@@ -87,7 +93,8 @@ export function TopicDeck({
           />
         </AnimatePresence>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3">
+
+      <div className="mt-4 grid shrink-0 grid-cols-2 gap-3">
         <button
           type="button"
           disabled={busy}

@@ -64,8 +64,8 @@ export default function RandomPage() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="mb-6">
+    <main className="app-shell app-shell-deck">
+      <header className="mb-6 shrink-0">
         <Link href="/" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
           ← Categories
         </Link>

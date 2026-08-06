@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export function LoginForm() {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,13 +22,13 @@ export function LoginForm() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Login failed");
+        setLoading(false);
         return;
       }
-      router.push("/");
-      router.refresh();
+      // Hard navigation so the new session cookie is always sent
+      window.location.assign("/");
     } catch {
       setError("Network error");
-    } finally {
       setLoading(false);
     }
   }

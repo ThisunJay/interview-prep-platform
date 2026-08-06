@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { sql } from "@/lib/db";
-import { createSession } from "@/lib/session";
+import {
+  SESSION_COOKIE,
+  createSessionToken,
+  sessionCookieOptions,
+} from "@/lib/session";
 
 const schema = z.object({
   username: z.string().trim().min(1),
@@ -26,13 +30,19 @@ export async function POST(request: Request) {
     `;
 
     if (rows.length === 0) {
-      return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid username or password" },
+        { status: 401 }
+      );
     }
 
     const user = rows[0];
     const valid = await bcrypt.compare(password, user.password_hash as string);
     if (!valid) {
-      return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid username or password" },
+        { status: 401 }
+      );
     }
 
     if (!user.allow) {
@@ -45,15 +55,17 @@ export async function POST(request: Request) {
       );
     }
 
-    await createSession({
-      userId: user.id as number,
-      username: user.username as string,
+    const token = await createSessionToken({
+      userId: Number(user.id),
+      username: String(user.username),
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       user: { id: user.id, username: user.username },
     });
+    response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+    return response;
   } catch (err) {
     console.error("login error", err);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });

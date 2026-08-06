@@ -68,9 +68,9 @@ export function SwipeCard({
       dragElastic={0.9}
       onDragEnd={handleDragEnd}
       onTap={handleTap}
-      initial={{ scale: 0.96, opacity: 0 }}
+      initial={{ scale: 0.98, opacity: 0.4 }}
       animate={{ scale: 1, opacity: 1 }}
-      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+      exit={{ opacity: 0, transition: { duration: 0.12 } }}
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
     >
       <motion.div
