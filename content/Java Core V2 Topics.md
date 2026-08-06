@@ -1,0 +1,80 @@
+# Java Core V2  
+- [] Java Collections Framework
+- [] java.util.concurrent Package
+- [] Queue, Deque, Stack, LinkedList
+- [] Java Algo
+- [] Java Design Patterns (Factory, Singleton, etc.)
+- [] Collectors, Grouping, Mapping
+- [] JAR, WAR Files
+- [] Maven/Gradle Basics
+- [] Unit Testing (JUnit, Mockito Basics)
+- [] ExecutorService & ThreadPool
+- [] Reflection API
+- [] CompletableFuture
+- [] Collections.sort & custom sorting
+- [] Fail-fast vs Fail-safe Iterators
+- [] Java I/O (FileReader, BufferedReader, etc.)
+- [] Sealed Classes (Java 15+)
+- [] Records (Java 14+)
+- [] Garbage Collection (GC) & GC Tuning Basics
+- [] JVM Architecture
+- [] Method References
+- [] Functional Interfaces
+- [] Synchronized, volatile, wait/notify
+- [] ThreadLocal
+- [] Nested & Inner Classes
+- [] Immutability & Thread-Safety
+- [] FlatMap vs Map
+- [] Date and Time API (java.time)
+- [] Locks (ReentrantLock etc.)
+- [] Annotations (Built-in & Custom)
+- [] Stream API
+- [] JIT Compiler
+- [] Java Memory Model (JMM)
+- [] Java Modules (JPMS - Java 9+)
+- [] JAVA JRE, JDK
+- [] Java bytecode
+- [] Java Basics & Syntax
+- [] Data Types & Variables
+- [] Operators
+- [] Control Flow Statements (if, switch, loops)
+- [] Arrays
+- [] Strings & StringBuilder
+- [] Object-Oriented Programming (OOP)
+- [] Classes & Objects
+- [] Constructors
+- [] Inheritance
+- [] Polymorphism
+- [] Abstraction
+- [] Encapsulation
+- [] Interfaces vs Abstract Classes
+- [] Access Modifiers
+- [] Static & Final Keywords
+- [] Anonymous Classes
+- [] Enums
+- [] Wrapper Classes
+- [] List, Set, Map Implementations
+- [] Comparable vs Comparator
+- [] HashCode & Equals Contracts
+- [] Concurrency (Threads, Runnable)
+- [] Exception Handling
+- [] Checked vs Unchecked Exceptions
+- [] Custom Exceptions
+- [] Try-with-resources
+- [] Lambda Expressions
+- [] Optional Class
+- [] Default & Static Methods in Interfaces
+- [] Memory Management
+- [] ClassLoader
+- [] Var Keyword (Java 10+)
+- [] Switch Expressions (Java 14+)
+- [] Pattern Matching (Java 16+)
+- [] Text Blocks
+- [] Try-with-resources Enhancements
+- [] Multi-catch Blocks
+- [] Best Practices & Code Quality
+- [] Serialization & Deserialization
+- [] Transient & Static in Serialization
+- [] Java NIO (Buffer, Channel, Selector)
+- [] Soft, Weak, Phantom References
+- [] Generics

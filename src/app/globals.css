@@ -1,0 +1,246 @@
+@import "tailwindcss";
+
+:root {
+  --bg-0: #071018;
+  --bg-1: #0d1b28;
+  --bg-2: #132536;
+  --surface: rgba(18, 36, 52, 0.82);
+  --surface-solid: #142838;
+  --ink: #e8f1f7;
+  --ink-soft: #c2d4e0;
+  --muted: #7f98ab;
+  --line: rgba(140, 180, 205, 0.18);
+  --accent: #5ec4b2;
+  --accent-deep: #2a9d8f;
+  --studied: #3ecf8e;
+  --studied-soft: rgba(62, 207, 142, 0.12);
+  --skipped: #e07a6a;
+  --skipped-soft: rgba(224, 122, 106, 0.12);
+  --glow: rgba(94, 196, 178, 0.22);
+}
+
+@theme inline {
+  --color-background: var(--bg-0);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  background:
+    radial-gradient(ellipse 90% 60% at 10% -10%, var(--glow), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 0%, rgba(42, 157, 143, 0.15), transparent 50%),
+    linear-gradient(165deg, var(--bg-0) 0%, var(--bg-1) 45%, var(--bg-2) 100%);
+  background-attachment: fixed;
+  min-height: 100%;
+}
+
+.app-shell {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: 1.25rem 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  font-family: var(--font-display), serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: clamp(2rem, 8vw, 2.75rem);
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.brand span {
+  color: var(--accent);
+}
+
+.field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: rgba(7, 16, 24, 0.55);
+  color: var(--ink);
+  padding: 0.75rem 0.9rem;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(94, 196, 178, 0.2);
+}
+
+.btn-primary {
+  border: none;
+  border-radius: 0.85rem;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
+  color: #041018;
+  font-weight: 600;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  backdrop-filter: blur(12px);
+}
+
+.category-link {
+  display: block;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--line);
+  background: rgba(10, 22, 34, 0.55);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.category-link:hover,
+.category-link:active {
+  border-color: rgba(94, 196, 178, 0.45);
+  background: rgba(20, 40, 56, 0.85);
+  transform: translateY(-1px);
+}
+
+.swipe-card {
+  border-radius: 1.35rem;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #163044 0%, #102636 100%);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.reveal-pulse {
+  animation: pulse-soft 2.2s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.fade-up {
+  animation: fade-up 0.55s ease both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.prose-prep h1,
+.prose-prep h2,
+.prose-prep h3,
+.prose-prep h4 {
+  font-family: var(--font-display), serif;
+  color: var(--ink);
+  margin: 1rem 0 0.5rem;
+  line-height: 1.25;
+}
+
+.prose-prep p {
+  margin: 0.55rem 0;
+}
+
+.prose-prep ul,
+.prose-prep ol {
+  margin: 0.5rem 0;
+  padding-left: 1.2rem;
+}
+
+.prose-prep li {
+  margin: 0.25rem 0;
+}
+
+.prose-prep code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 0.1em 0.35em;
+  border-radius: 0.3em;
+}
+
+.prose-prep pre {
+  overflow-x: auto;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+  margin: 0.75rem 0;
+}
+
+.prose-prep pre code {
+  background: none;
+  padding: 0;
+}
+
+.prose-prep table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 0.75rem 0;
+}
+
+.prose-prep th,
+.prose-prep td {
+  border: 1px solid var(--line);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+}
+
+.prose-prep strong {
+  color: var(--ink);
+}
+
+.prose-prep a {
+  color: var(--accent);
+}
