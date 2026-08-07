@@ -138,15 +138,21 @@ export default function StudyPage() {
             <p className="mb-3 text-sm text-[var(--muted)]">
               {topics.length} topics ·{" "}
               {
-                topics.filter((t) =>
-                  t.status === "studied" || t.status === "correct"
+                topics.filter(
+                  (t) => t.status === "studied" || t.status === "correct"
                 ).length
               }{" "}
               studied
             </p>
+            <p className="mb-3 text-xs text-[var(--muted)]">
+              Tap <span className="text-[var(--accent)]">Study again</span> on a
+              Studied topic to put it back in To study.
+            </p>
             <ul className="space-y-2">
               {topics.map((topic) => {
                 const meta = statusMeta(topic.status);
+                const isStudied =
+                  topic.status === "studied" || topic.status === "correct";
                 return (
                   <li
                     key={topic.id}
@@ -163,11 +169,37 @@ export default function StudyPage() {
                           {topic.title}
                         </p>
                       </div>
-                      <span
-                        className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium ${meta.className}`}
-                      >
-                        {meta.label}
-                      </span>
+                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                        <span
+                          className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${meta.className}`}
+                        >
+                          {meta.label}
+                        </span>
+                        {isStudied && (
+                          <button
+                            type="button"
+                            className="text-[11px] font-medium text-[var(--accent)] underline-offset-2 hover:underline"
+                            onClick={async () => {
+                              const res = await fetch("/api/progress", {
+                                method: "DELETE",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ topicId: topic.id }),
+                              });
+                              if (!res.ok) return;
+                              setTopics((prev) =>
+                                prev.map((t) =>
+                                  t.id === topic.id
+                                    ? { ...t, status: null }
+                                    : t
+                                )
+                              );
+                              setStudiedCount((c) => Math.max(0, c - 1));
+                            }}
+                          >
+                            Study again
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </li>
                 );
