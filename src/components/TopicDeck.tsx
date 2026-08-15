@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { SwipeCard, type CardTopic } from "./SwipeCard";
+import {
+  SwipeCard,
+  type CardTopic,
+  type SwipeCardHandle,
+} from "./SwipeCard";
 
 type DeckProps = {
   topics: CardTopic[];
@@ -38,6 +42,7 @@ export function TopicDeck({
   const [stats, setStats] = useState({ right: 0, left: 0 });
   const [busy, setBusy] = useState(false);
   const [completed, setCompleted] = useState(completedCount ?? 0);
+  const cardRef = useRef<SwipeCardHandle>(null);
 
   const useCategoryProgress =
     typeof completedCount === "number" &&
@@ -94,6 +99,11 @@ export function TopicDeck({
     ]
   );
 
+  function triggerSwipe(direction: "left" | "right") {
+    if (busy) return;
+    cardRef.current?.swipe(direction);
+  }
+
   if (!current) {
     return (
       <div className="panel p-5 text-sm text-[var(--muted)]">
@@ -115,10 +125,11 @@ export function TopicDeck({
         <span>{remaining} left</span>
       </div>
 
-      <div className="relative min-h-0 w-full flex-1">
+      <div className="relative min-h-0 w-full flex-1 overflow-hidden">
         <AnimatePresence mode="wait">
           <SwipeCard
             key={current.id}
+            ref={cardRef}
             topic={current}
             revealMode={revealMode}
             onSwipe={handleSwipe}
@@ -132,7 +143,7 @@ export function TopicDeck({
         <button
           type="button"
           disabled={busy}
-          onClick={() => handleSwipe("left")}
+          onClick={() => triggerSwipe("left")}
           className="rounded-xl border border-[var(--skipped)]/40 bg-[var(--skipped-soft)] py-3 text-sm font-medium text-[var(--skipped)] active:scale-[0.98]"
         >
           {leftLabel ?? "Skip"}
@@ -140,7 +151,7 @@ export function TopicDeck({
         <button
           type="button"
           disabled={busy}
-          onClick={() => handleSwipe("right")}
+          onClick={() => triggerSwipe("right")}
           className="rounded-xl border border-[var(--studied)]/40 bg-[var(--studied-soft)] py-3 text-sm font-medium text-[var(--studied)] active:scale-[0.98]"
         >
           {rightLabel ?? "Studied"}
