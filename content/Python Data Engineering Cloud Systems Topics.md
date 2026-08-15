@@ -159,7 +159,7 @@ Use with companion Guides later. Check off as you can explain aloud with tradeof
 **✅ Apache Spark**
 
 - [] Spark vs MapReduce (why Spark won for many ETL workloads)
-- [] Architecture
+- [] Spark Architecture
   - [] Driver, executors, cluster manager
   - [] Jobs → Stages → Tasks
   - [] DAG scheduler & shuffle
@@ -209,7 +209,7 @@ Use with companion Guides later. Check off as you can explain aloud with tradeof
 - [] Security (SASL, TLS, ACLs) overview
 - [] Ops: lag monitoring, under-replicated partitions
 - [] AWS patterns: self-managed vs MSK vs MSK Serverless
-- [] CV patterns
+- [] Kafka CV patterns
   - [] Lambda + Kafka validate/process/route order & inventory feeds
   - [] High-volume event-driven design
 
@@ -218,7 +218,7 @@ Use with companion Guides later. Check off as you can explain aloud with tradeof
 **✅ Apache Flink**
 
 - [] Why Flink for real-time (true streaming vs micro-batch)
-- [] Architecture
+- [] Flink Architecture
   - [] JobManager / TaskManagers
   - [] Parallelism, slots, chaining
   - [] Managed state (keyed state)
@@ -233,7 +233,7 @@ Use with companion Guides later. Check off as you can explain aloud with tradeof
 - [] Backpressure
 - [] Flink on EMR / Kinesis Data Analytics / self-managed (overview)
 - [] Flink vs Spark Structured Streaming vs Kafka Streams
-- [] CV patterns
+- [] Flink CV patterns
   - [] Real-time order/product capture
   - [] Product ranking pipeline into OpenSearch
   - [] Latency reduction for customer-product embeddings queries

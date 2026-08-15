@@ -669,7 +669,7 @@ In-memory DAG execution, richer APIs (SQL/DataFrame), iterative ML — less HDFS
 
 ---
 
-### Architecture
+### Spark Architecture
 
 #### Driver, executors, cluster manager
 
@@ -905,7 +905,7 @@ MSK managed brokers; Serverless for variable load; self-managed on EC2/K8s for e
 
 ---
 
-### CV patterns
+### Kafka CV patterns
 
 #### Lambda + Kafka validate/process/route order & inventory feeds
 
@@ -925,7 +925,7 @@ Flink processes continuous streams with sophisticated **event-time** and **keyed
 
 ---
 
-### Architecture
+### Flink Architecture
 
 #### JobManager / TaskManagers
 
@@ -1011,7 +1011,7 @@ EMR can run Flink; KDA/Managed Flink on AWS reduces ops; self-managed on K8s for
 
 ---
 
-### CV patterns
+### Flink CV patterns
 
 #### Real-time order/product capture
 
