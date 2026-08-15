@@ -14,6 +14,11 @@ type DeckProps = {
   /** Category progress: completed so far / total topics */
   completedCount?: number;
   totalCount?: number;
+  /**
+   * When jumping into a list mid-way, show (positionOffset + index + 1) / totalCount
+   * instead of session-relative 1/N.
+   */
+  positionOffset?: number;
   onComplete: (stats: { right: number; left: number }) => void;
 };
 
@@ -26,6 +31,7 @@ export function TopicDeck({
   rightStatus,
   completedCount,
   totalCount,
+  positionOffset,
   onComplete,
 }: DeckProps) {
   const [index, setIndex] = useState(0);
@@ -34,7 +40,11 @@ export function TopicDeck({
   const [completed, setCompleted] = useState(completedCount ?? 0);
 
   const useCategoryProgress =
-    typeof completedCount === "number" && typeof totalCount === "number";
+    typeof completedCount === "number" &&
+    typeof totalCount === "number" &&
+    positionOffset === undefined;
+  const useAbsolutePosition =
+    typeof positionOffset === "number" && typeof totalCount === "number";
   const remaining = topics.length - index;
   const current = topics[index];
 
@@ -92,18 +102,19 @@ export function TopicDeck({
     );
   }
 
+  const counterLeft = useAbsolutePosition
+    ? `${positionOffset + index + 1} / ${totalCount}`
+    : useCategoryProgress
+      ? `${completed} / ${totalCount}`
+      : `${index + 1} / ${topics.length}`;
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="mb-3 flex shrink-0 items-center justify-between px-1 text-sm text-[var(--muted)]">
-        <span>
-          {useCategoryProgress
-            ? `${completed} / ${totalCount}`
-            : `${index + 1} / ${topics.length}`}
-        </span>
+        <span>{counterLeft}</span>
         <span>{remaining} left</span>
       </div>
 
-      {/* Explicit height so absolute swipe cards are visible */}
       <div className="relative min-h-0 w-full flex-1">
         <AnimatePresence mode="wait">
           <SwipeCard
