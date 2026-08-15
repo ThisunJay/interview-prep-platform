@@ -7,6 +7,7 @@ import {
   type CardTopic,
   type SwipeCardHandle,
 } from "./SwipeCard";
+import { PrepBridge } from "./PrepBridge";
 
 type DeckProps = {
   topics: CardTopic[];
@@ -26,6 +27,8 @@ type DeckProps = {
   onComplete: (stats: { right: number; left: number }) => void;
 };
 
+const BRIDGE_MS = 420;
+
 export function TopicDeck({
   topics,
   revealMode = false,
@@ -41,6 +44,8 @@ export function TopicDeck({
   const [index, setIndex] = useState(0);
   const [stats, setStats] = useState({ right: 0, left: 0 });
   const [busy, setBusy] = useState(false);
+  const [bridging, setBridging] = useState(false);
+  const [bridgeSeed, setBridgeSeed] = useState(0);
   const [completed, setCompleted] = useState(completedCount ?? 0);
   const cardRef = useRef<SwipeCardHandle>(null);
 
@@ -54,7 +59,7 @@ export function TopicDeck({
   const current = topics[index];
 
   const handleSwipe = useCallback(
-    async (direction: "left" | "right") => {
+    (direction: "left" | "right") => {
       if (!current || busy) return;
       setBusy(true);
 
@@ -63,28 +68,35 @@ export function TopicDeck({
         right: stats.right + (direction === "right" ? 1 : 0),
         left: stats.left + (direction === "left" ? 1 : 0),
       };
+      const topicId = current.id;
+      const isLast = index + 1 >= topics.length;
 
-      try {
-        await fetch("/api/progress", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topicId: current.id, status }),
-        });
-      } catch {
-        // still advance so the session isn't stuck offline
-      }
+      // Persist in background — don't block the next card
+      void fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topicId, status }),
+      }).catch(() => {});
 
       setStats(nextStats);
       if (direction === "right" && useCategoryProgress) {
         setCompleted((c) => c + 1);
       }
 
-      if (index + 1 >= topics.length) {
+      if (isLast) {
         onComplete(nextStats);
-      } else {
-        setIndex((i) => i + 1);
+        setBusy(false);
+        return;
       }
-      setBusy(false);
+
+      setBridgeSeed((s) => s + 1);
+      setBridging(true);
+
+      window.setTimeout(() => {
+        setIndex((i) => i + 1);
+        setBridging(false);
+        setBusy(false);
+      }, BRIDGE_MS);
     },
     [
       busy,
@@ -100,11 +112,11 @@ export function TopicDeck({
   );
 
   function triggerSwipe(direction: "left" | "right") {
-    if (busy) return;
+    if (busy || bridging) return;
     cardRef.current?.swipe(direction);
   }
 
-  if (!current) {
+  if (!current && !bridging) {
     return (
       <div className="panel p-5 text-sm text-[var(--muted)]">
         No topic to show.
@@ -122,37 +134,41 @@ export function TopicDeck({
     <div className="flex h-full min-h-0 flex-col">
       <div className="mb-3 flex shrink-0 items-center justify-between px-1 text-sm text-[var(--muted)]">
         <span>{counterLeft}</span>
-        <span>{remaining} left</span>
+        <span>{Math.max(remaining - (bridging ? 1 : 0), 0)} left</span>
       </div>
 
       <div className="relative min-h-0 w-full flex-1 overflow-hidden">
         <AnimatePresence mode="wait">
-          <SwipeCard
-            key={current.id}
-            ref={cardRef}
-            topic={current}
-            revealMode={revealMode}
-            onSwipe={handleSwipe}
-            leftLabel={leftLabel}
-            rightLabel={rightLabel}
-          />
+          {bridging ? (
+            <PrepBridge key={`bridge-${bridgeSeed}`} seed={bridgeSeed} />
+          ) : current ? (
+            <SwipeCard
+              key={current.id}
+              ref={cardRef}
+              topic={current}
+              revealMode={revealMode}
+              onSwipe={handleSwipe}
+              leftLabel={leftLabel}
+              rightLabel={rightLabel}
+            />
+          ) : null}
         </AnimatePresence>
       </div>
 
       <div className="mt-4 grid shrink-0 grid-cols-2 gap-3">
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || bridging}
           onClick={() => triggerSwipe("left")}
-          className="rounded-xl border border-[var(--skipped)]/40 bg-[var(--skipped-soft)] py-3 text-sm font-medium text-[var(--skipped)] active:scale-[0.98]"
+          className="rounded-xl border border-[var(--skipped)]/40 bg-[var(--skipped-soft)] py-3 text-sm font-medium text-[var(--skipped)] active:scale-[0.98] disabled:opacity-50"
         >
           {leftLabel ?? "Skip"}
         </button>
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || bridging}
           onClick={() => triggerSwipe("right")}
-          className="rounded-xl border border-[var(--studied)]/40 bg-[var(--studied-soft)] py-3 text-sm font-medium text-[var(--studied)] active:scale-[0.98]"
+          className="rounded-xl border border-[var(--studied)]/40 bg-[var(--studied-soft)] py-3 text-sm font-medium text-[var(--studied)] active:scale-[0.98] disabled:opacity-50"
         >
           {rightLabel ?? "Studied"}
         </button>
