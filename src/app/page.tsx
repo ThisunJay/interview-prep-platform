@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { sql } from "@/lib/db";
-import { getSession } from "@/lib/session";
+import { CategoryList } from "@/components/CategoryList";
 import { LogoutButton } from "@/components/LogoutButton";
+import { getCategoriesForUser } from "@/lib/categories";
+import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -10,20 +11,7 @@ export default async function HomePage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const categories = await sql`
-    SELECT
-      c.id,
-      c.name,
-      c.slug,
-      COUNT(t.id)::int AS topic_count,
-      COUNT(up.id) FILTER (WHERE up.status IN ('studied', 'correct'))::int AS studied_count
-    FROM categories c
-    LEFT JOIN topics t ON t.category_id = c.id
-    LEFT JOIN user_progress up
-      ON up.topic_id = t.id AND up.user_id = ${session.userId}
-    GROUP BY c.id
-    ORDER BY c.name
-  `;
+  const categories = await getCategoriesForUser(session.userId);
 
   return (
     <main className="app-shell">
@@ -62,37 +50,7 @@ export default async function HomePage() {
             the markdown files.
           </div>
         ) : (
-          <ul className="space-y-3">
-            {categories.map((cat) => {
-              const pct =
-                cat.topic_count > 0
-                  ? Math.round((cat.studied_count / cat.topic_count) * 100)
-                  : 0;
-              return (
-                <li key={cat.id as number}>
-                  <Link href={`/study/${cat.id}`} className="category-link">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-[family-name:var(--font-display)] text-lg font-medium">
-                          {cat.name as string}
-                        </p>
-                        <p className="mt-1 text-sm text-[var(--muted)]">
-                          {cat.topic_count as number} topics · {pct}% studied
-                        </p>
-                      </div>
-                      <span className="mt-1 text-[var(--accent)]">→</span>
-                    </div>
-                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/30">
-                      <div
-                        className="h-full rounded-full bg-[var(--accent)]"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <CategoryList initialCategories={categories} />
         )}
       </section>
     </main>
