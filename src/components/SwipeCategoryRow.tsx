@@ -70,6 +70,12 @@ export function SwipeCategoryRow({ category, onTogglePin }: SwipeCategoryRowProp
     snapBack();
   }
 
+  function handlePinControlClick(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    onTogglePin(category.id, !category.pinned);
+  }
+
   function handleRowClick() {
     if (dragDistance.current > 8) return;
     router.push(`/study/${category.id}`);
@@ -118,7 +124,7 @@ export function SwipeCategoryRow({ category, onTogglePin }: SwipeCategoryRowProp
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               {category.pinned ? (
-                <span className="category-pin-badge" title="Pinned">
+                <span className="category-pin-badge pin-hint-mobile" title="Pinned">
                   <PinIcon filled />
                 </span>
               ) : null}
@@ -130,7 +136,18 @@ export function SwipeCategoryRow({ category, onTogglePin }: SwipeCategoryRowProp
               {category.topic_count} topics · {pct}% studied
             </p>
           </div>
-          <span className="mt-1 shrink-0 text-[var(--accent)]">→</span>
+          <div className="mt-0.5 flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              className={`category-pin-control ${category.pinned ? "is-pinned" : ""}`}
+              onClick={handlePinControlClick}
+              aria-label={`${actionLabel} ${category.name}`}
+              title={actionLabel}
+            >
+              <PinIcon filled={category.pinned} />
+            </button>
+            <span className="category-row-arrow text-[var(--accent)]">→</span>
+          </div>
         </div>
         <div className="category-progress-track">
           <div

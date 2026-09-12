@@ -150,13 +150,18 @@ export default function RandomPage() {
           Random drill
         </h1>
         <p className="mt-2 text-sm text-[var(--muted)]">
-          Double-tap a card to reveal the guide, then swipe right if you got it
-          or left if you missed it.
+          <span className="deck-hint-mobile">
+            Double-tap a card to reveal the guide, then swipe right if you got it
+            or left if you missed it.
+          </span>
+          <span className="deck-hint-desktop">
+            Press Space to reveal, then use the Got it / Missed buttons.
+          </span>
         </p>
       </header>
 
       {phase === "setup" && (
-        <div className="space-y-6 pb-8">
+        <div className="grid gap-6 pb-8 md:grid-cols-2 md:items-start">
           <div className="panel fade-up space-y-5 p-5">
             <div>
               <label className="mb-1.5 block text-sm text-[var(--muted)]">

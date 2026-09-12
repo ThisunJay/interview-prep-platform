@@ -1,6 +1,12 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import {
+  forwardRef,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   animate,
   motion,
@@ -20,6 +26,7 @@ export type CardTopic = {
 
 export type SwipeCardHandle = {
   swipe: (direction: "left" | "right") => void;
+  reveal: () => void;
 };
 
 type SwipeCardProps = {
@@ -32,7 +39,7 @@ type SwipeCardProps = {
 };
 
 const SWIPE_THRESHOLD = 110;
-const FLY_DISTANCE = 480;
+const DEFAULT_FLY_DISTANCE = 480;
 
 export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
   function SwipeCard(
@@ -47,24 +54,41 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
   ) {
     const [revealed, setRevealed] = useState(!revealMode);
     const [leaving, setLeaving] = useState(false);
+    const [flyDistance, setFlyDistance] = useState(DEFAULT_FLY_DISTANCE);
     const lastTap = useRef(0);
     const leavingRef = useRef(false);
+    const cardRootRef = useRef<HTMLElement | null>(null);
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-220, 0, 220], [-14, 0, 14]);
     const rightOpacity = useTransform(x, [40, 140], [0, 1]);
     const leftOpacity = useTransform(x, [-140, -40], [1, 0]);
     const opacity = useTransform(
       x,
-      [-FLY_DISTANCE, -120, 0, 120, FLY_DISTANCE],
+      [-flyDistance, -120, 0, 120, flyDistance],
       [0, 1, 1, 1, 0]
     );
+
+    useLayoutEffect(() => {
+      const node = cardRootRef.current;
+      if (!node) return;
+
+      const update = () => {
+        const width = node.getBoundingClientRect().width;
+        setFlyDistance(Math.max(DEFAULT_FLY_DISTANCE, Math.ceil(width + 80)));
+      };
+
+      update();
+      const observer = new ResizeObserver(update);
+      observer.observe(node);
+      return () => observer.disconnect();
+    }, []);
 
     async function flyAway(direction: "left" | "right") {
       if (leavingRef.current) return;
       leavingRef.current = true;
       setLeaving(true);
 
-      const target = direction === "right" ? FLY_DISTANCE : -FLY_DISTANCE;
+      const target = direction === "right" ? flyDistance : -flyDistance;
       await animate(x, target, {
         type: "spring",
         stiffness: 280,
@@ -78,6 +102,10 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
     useImperativeHandle(ref, () => ({
       swipe: (direction) => {
         void flyAway(direction);
+      },
+      reveal: () => {
+        if (!revealMode || leavingRef.current) return;
+        setRevealed(true);
       },
     }));
 
@@ -104,6 +132,7 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
 
     return (
       <motion.article
+        ref={cardRootRef}
         className="swipe-card absolute inset-0 flex flex-col overflow-hidden touch-none select-none"
         style={{ x, rotate, opacity }}
         drag={leaving ? false : "x"}
@@ -141,7 +170,10 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
           </h2>
           {revealMode && !revealed && (
             <p className="mt-3 text-sm text-[var(--muted)]">
-              Double-tap to reveal the answer
+              <span className="deck-hint-mobile">Double-tap to reveal the answer</span>
+              <span className="deck-hint-desktop">
+                Press Space or Enter to reveal the answer
+              </span>
             </p>
           )}
         </header>
@@ -156,14 +188,21 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
           ) : (
             <div className="flex h-full min-h-[180px] items-center justify-center">
               <div className="reveal-pulse rounded-full border border-dashed border-[var(--line)] px-6 py-10 text-center text-sm text-[var(--muted)]">
-                Hidden — double-tap
+                <span className="deck-hint-mobile">Hidden — double-tap</span>
+                <span className="deck-hint-desktop">Hidden — Space / Enter</span>
               </div>
             </div>
           )}
         </div>
 
         <footer className="shrink-0 border-t border-[var(--line)] px-5 py-3 text-center text-xs text-[var(--muted)]">
-          Swipe right · {rightLabel} &nbsp;·&nbsp; Swipe left · {leftLabel}
+          <span className="deck-hint-mobile">
+            Swipe right · {rightLabel} &nbsp;·&nbsp; Swipe left · {leftLabel}
+          </span>
+          <span className="deck-hint-desktop">
+            Use the buttons below · {rightLabel} / {leftLabel}
+            {revealMode ? " · Space to reveal" : ""}
+          </span>
         </footer>
       </motion.article>
     );

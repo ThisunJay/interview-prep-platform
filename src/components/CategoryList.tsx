@@ -61,7 +61,12 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-[var(--muted)]">
-        Swipe a category right to pin · up to {MAX_PINNED_CATEGORIES} pinned
+        <span className="pin-hint-mobile">
+          Swipe a category right to pin · up to {MAX_PINNED_CATEGORIES} pinned
+        </span>
+        <span className="pin-hint-desktop">
+          Click the pin to pin a category · up to {MAX_PINNED_CATEGORIES} pinned
+        </span>
       </p>
 
       {error ? (
@@ -75,7 +80,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
           <p className="mb-2 text-[0.65rem] font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
             Pinned
           </p>
-          <ul className="space-y-3">
+          <ul className="category-grid">
             {pinned.map((cat) => (
               <SwipeCategoryRow
                 key={cat.id}
@@ -94,7 +99,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
               All categories
             </p>
           ) : null}
-          <ul className="space-y-3">
+          <ul className="category-grid">
             {unpinned.map((cat) => (
               <SwipeCategoryRow
                 key={cat.id}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import {
   SwipeCard,
@@ -25,6 +25,8 @@ type DeckProps = {
    */
   positionOffset?: number;
   onComplete: (stats: { right: number; left: number }) => void;
+  /** Fires when the visible card changes (including initial mount). */
+  onActiveTopicChange?: (topic: CardTopic | null) => void;
 };
 
 const BRIDGE_MS = 420;
@@ -40,6 +42,7 @@ export function TopicDeck({
   totalCount,
   positionOffset,
   onComplete,
+  onActiveTopicChange,
 }: DeckProps) {
   const [index, setIndex] = useState(0);
   const [stats, setStats] = useState({ right: 0, left: 0 });
@@ -48,6 +51,8 @@ export function TopicDeck({
   const [bridgeSeed, setBridgeSeed] = useState(0);
   const [completed, setCompleted] = useState(completedCount ?? 0);
   const cardRef = useRef<SwipeCardHandle>(null);
+  const busyRef = useRef(false);
+  const bridgingRef = useRef(false);
 
   const useCategoryProgress =
     typeof completedCount === "number" &&
@@ -57,6 +62,18 @@ export function TopicDeck({
     typeof positionOffset === "number" && typeof totalCount === "number";
   const remaining = topics.length - index;
   const current = topics[index];
+
+  useEffect(() => {
+    busyRef.current = busy;
+  }, [busy]);
+
+  useEffect(() => {
+    bridgingRef.current = bridging;
+  }, [bridging]);
+
+  useEffect(() => {
+    onActiveTopicChange?.(current ?? null);
+  }, [current, onActiveTopicChange]);
 
   const handleSwipe = useCallback(
     (direction: "left" | "right") => {
@@ -115,6 +132,33 @@ export function TopicDeck({
     if (busy || bridging) return;
     cardRef.current?.swipe(direction);
   }
+
+  useEffect(() => {
+    if (!revealMode) return;
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (busyRef.current || bridgingRef.current) return;
+
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (event.key === " " || event.key === "Enter") {
+        event.preventDefault();
+        cardRef.current?.reveal();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [revealMode]);
 
   if (!current && !bridging) {
     return (

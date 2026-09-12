@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { TopicDeck } from "@/components/TopicDeck";
@@ -12,6 +12,10 @@ type TopicRow = CardTopic & {
 };
 
 type Mode = "loading" | "deck" | "list" | "focus" | "done" | "empty";
+
+function isStudiedStatus(status: string | null | undefined) {
+  return status === "studied" || status === "correct";
+}
 
 function statusMeta(status: string | null | undefined) {
   switch (status) {
@@ -41,7 +45,7 @@ function statusMeta(status: string | null | undefined) {
 
 export default function StudyPage() {
   const params = useParams<{ id: string }>();
-  const [topics, setTopics] = useState<TopicRow[]>([]);
+  const [allTopics, setAllTopics] = useState<TopicRow[]>([]);
   const [categoryName, setCategoryName] = useState("");
   const [topicTotal, setTopicTotal] = useState(0);
   const [studiedCount, setStudiedCount] = useState(0);
@@ -49,22 +53,85 @@ export default function StudyPage() {
   const [stats, setStats] = useState({ right: 0, left: 0 });
   const [filter, setFilter] = useState<"all" | "unstudied">("unstudied");
   const [focusIndex, setFocusIndex] = useState<number | null>(null);
-  const [allTopics, setAllTopics] = useState<TopicRow[]>([]);
+  const [deckKey, setDeckKey] = useState(0);
+  const [activeTopicId, setActiveTopicId] = useState<number | null>(null);
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  const mobileListScrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const handleActiveTopicChange = useCallback((topic: CardTopic | null) => {
+    setActiveTopicId(topic?.id ?? null);
+  }, []);
 
-    async function load() {
-      setMode("loading");
+  const scrollActiveTopicIntoView = useCallback(() => {
+    if (activeTopicId == null) return;
+
+    const scrollIn = (root: HTMLElement | null) => {
+      if (!root) return;
+      const el = root.querySelector(`[data-topic-id="${activeTopicId}"]`);
+      if (el instanceof HTMLElement) {
+        el.scrollIntoView({
+          block: "center",
+          behavior: "smooth",
+          inline: "nearest",
+        });
+      }
+    };
+
+    scrollIn(listScrollRef.current);
+    scrollIn(mobileListScrollRef.current);
+  }, [activeTopicId]);
+
+  const unstudiedTopics = useMemo(
+    () => allTopics.filter((t) => !isStudiedStatus(t.status)),
+    [allTopics]
+  );
+
+  const mobileTopics = filter === "all" ? allTopics : unstudiedTopics;
+
+  const focusTopics =
+    focusIndex !== null ? allTopics.slice(focusIndex) : [];
+
+  const applyLoadedTopics = useCallback(
+    (
+      list: TopicRow[],
+      cat: { name?: string; topic_count?: number; studied_count?: number } | null,
+      nextFilter: "all" | "unstudied"
+    ) => {
+      setAllTopics(list);
+      setCategoryName(cat?.name ?? "Category");
+      setTopicTotal(Number(cat?.topic_count ?? list.length));
+      setStudiedCount(Number(cat?.studied_count ?? 0));
+      setDeckKey((k) => k + 1);
       setFocusIndex(null);
+      setFilter(nextFilter);
+
+      if (!list.length) {
+        setMode("empty");
+        return;
+      }
+
+      if (nextFilter === "all") {
+        setMode("list");
+        return;
+      }
+
+      const remaining = list.filter((t) => !isStudiedStatus(t.status));
+      setMode(remaining.length ? "deck" : "empty");
+    },
+    []
+  );
+
+  const loadAllTopics = useCallback(
+    async (nextFilter: "all" | "unstudied" = "unstudied") => {
+      setMode("loading");
 
       const [topicsRes, catsRes] = await Promise.all([
-        fetch(`/api/topics?categoryId=${params.id}&filter=${filter}`),
+        fetch(`/api/topics?categoryId=${params.id}&filter=all`),
         fetch("/api/categories"),
       ]);
 
       if (!topicsRes.ok) {
-        if (!cancelled) setMode("empty");
+        setMode("empty");
         return;
       }
 
@@ -73,76 +140,261 @@ export default function StudyPage() {
       const cat = catsData.categories?.find(
         (c: { id: number }) => String(c.id) === String(params.id)
       );
-
-      if (cancelled) return;
-
-      setCategoryName(cat?.name ?? "Category");
-      setTopicTotal(Number(cat?.topic_count ?? 0));
-      setStudiedCount(Number(cat?.studied_count ?? 0));
       const list = (topicsData.topics ?? []) as TopicRow[];
-      setTopics(list);
-      if (filter === "all") setAllTopics(list);
+      applyLoadedTopics(list, cat ?? null, nextFilter);
+    },
+    [applyLoadedTopics, params.id]
+  );
 
-      if (!list.length) {
-        setMode("empty");
-      } else if (filter === "all") {
-        setMode("list");
-      } else {
-        setMode("deck");
+  useEffect(() => {
+    void loadAllTopics("unstudied");
+  }, [loadAllTopics]);
+
+  useEffect(() => {
+    if (focusIndex !== null && allTopics[focusIndex]) {
+      setActiveTopicId(allTopics[focusIndex].id);
+    }
+  }, [focusIndex, allTopics]);
+
+  useEffect(() => {
+    if (activeTopicId == null) return;
+
+    // Wait for the All list to mount (mobile tab switch) before scrolling.
+    const frame = window.requestAnimationFrame(() => {
+      scrollActiveTopicIntoView();
+    });
+    const timeout = window.setTimeout(() => {
+      scrollActiveTopicIntoView();
+    }, 60);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+    };
+  }, [activeTopicId, mode, filter, scrollActiveTopicIntoView]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && focusIndex !== null) {
+        event.preventDefault();
+        setFocusIndex(null);
+        setMode(filter === "all" ? "list" : unstudiedTopics.length ? "deck" : "empty");
+        setDeckKey((k) => k + 1);
       }
     }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [filter, focusIndex, unstudiedTopics.length]);
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [params.id, filter]);
-
-  async function returnToAllList() {
+  function syncModeAfterFilter(nextFilter: "all" | "unstudied") {
+    setFilter(nextFilter);
     setFocusIndex(null);
-    setFilter("all");
-    setMode("loading");
-    try {
-      const [topicsRes, catsRes] = await Promise.all([
-        fetch(`/api/topics?categoryId=${params.id}&filter=all`),
-        fetch("/api/categories"),
-      ]);
-      const topicsData = await topicsRes.json();
-      const catsData = catsRes.ok ? await catsRes.json() : { categories: [] };
-      const cat = catsData.categories?.find(
-        (c: { id: number }) => String(c.id) === String(params.id)
-      );
-      const list = (topicsData.topics ?? []) as TopicRow[];
-      setTopics(list);
-      setAllTopics(list);
-      setStudiedCount(Number(cat?.studied_count ?? 0));
-      setTopicTotal(Number(cat?.topic_count ?? list.length));
-      setMode(list.length ? "list" : "empty");
-    } catch {
+    if (!allTopics.length) {
+      setMode("empty");
+      return;
+    }
+    if (nextFilter === "all") {
       setMode("list");
+      return;
+    }
+    const remaining = allTopics.filter((t) => !isStudiedStatus(t.status));
+    setMode(remaining.length ? "deck" : "empty");
+    setDeckKey((k) => k + 1);
+  }
+
+  async function markStudyAgain(topicId: number) {
+    const res = await fetch("/api/progress", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topicId }),
+    });
+    if (!res.ok) return;
+
+    setAllTopics((prev) =>
+      prev.map((t) => (t.id === topicId ? { ...t, status: null } : t))
+    );
+    setStudiedCount((c) => Math.max(0, c - 1));
+    setDeckKey((k) => k + 1);
+    if (filter === "unstudied") {
+      setMode("deck");
     }
   }
 
-  const shellClass =
-    mode === "list" || mode === "loading" || mode === "empty"
-      ? filter === "all"
-        ? "app-shell"
-        : "app-shell app-shell-deck"
-      : "app-shell app-shell-deck";
+  function openTopicAt(index: number) {
+    setFocusIndex(index);
+    setMode("focus");
+  }
 
-  const focusTopics =
-    focusIndex !== null ? allTopics.slice(focusIndex) : [];
+  function clearFocus() {
+    setFocusIndex(null);
+    if (filter === "all") {
+      setMode("list");
+    } else if (unstudiedTopics.length) {
+      setMode("deck");
+      setDeckKey((k) => k + 1);
+    } else {
+      setMode("empty");
+    }
+  }
+
+  function applyDeckProgress(s: { right: number; left: number }) {
+    setStats(s);
+    setStudiedCount((c) => c + s.right);
+  }
+
+  function renderTopicList(topics: TopicRow[], opts?: { compact?: boolean }) {
+    return (
+      <ul className="space-y-2">
+        {topics.map((topic, index) => {
+          const meta = statusMeta(topic.status);
+          const studied = isStudiedStatus(topic.status);
+          const absoluteIndex = allTopics.findIndex((t) => t.id === topic.id);
+          const openIndex = absoluteIndex >= 0 ? absoluteIndex : index;
+          const isActive = activeTopicId === topic.id;
+
+          return (
+            <li
+              key={topic.id}
+              data-topic-id={topic.id}
+              className={`rounded-xl border px-3.5 py-3 transition ${
+                isActive
+                  ? "border-[var(--accent)]/55 bg-[rgba(20,40,56,0.9)]"
+                  : "border-[var(--line)] bg-[rgba(10,22,34,0.55)] hover:border-[var(--accent)]/40"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 text-left active:opacity-80"
+                  onClick={() => openTopicAt(openIndex)}
+                >
+                  {topic.section && (
+                    <p className="mb-0.5 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
+                      {topic.section}
+                    </p>
+                  )}
+                  <p
+                    className={`font-medium leading-snug text-[var(--ink)] ${
+                      opts?.compact ? "text-sm" : ""
+                    }`}
+                  >
+                    {topic.title}
+                  </p>
+                  <p className="mt-1 text-[11px] text-[var(--accent)]">
+                    Open card →
+                  </p>
+                </button>
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  <span
+                    className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${meta.className}`}
+                  >
+                    {meta.label}
+                  </span>
+                  {studied && (
+                    <button
+                      type="button"
+                      className="text-[11px] font-medium text-[var(--accent)] underline-offset-2 hover:underline"
+                      onClick={() => void markStudyAgain(topic.id)}
+                    >
+                      Study again
+                    </button>
+                  )}
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  function renderDeckPanel() {
+    if (mode === "loading") {
+      return <p className="text-[var(--muted)]">Loading topics…</p>;
+    }
+
+    if (mode === "focus" && focusTopics.length > 0 && focusIndex !== null) {
+      return (
+        <TopicDeck
+          key={`focus-${focusIndex}-${focusTopics[0].id}`}
+          topics={focusTopics}
+          leftLabel="Skip"
+          rightLabel="Studied"
+          leftStatus="skipped"
+          rightStatus="studied"
+          positionOffset={focusIndex}
+          totalCount={topicTotal || allTopics.length}
+          onActiveTopicChange={handleActiveTopicChange}
+          onComplete={(s) => {
+            applyDeckProgress(s);
+            void loadAllTopics("unstudied");
+          }}
+        />
+      );
+    }
+
+    if (mode === "done") {
+      return (
+        <div className="panel fade-up p-6 text-center">
+          <p className="font-[family-name:var(--font-display)] text-2xl">
+            Session complete
+          </p>
+          <p className="mt-3 text-[var(--muted)]">
+            Studied <span className="text-[var(--studied)]">{stats.right}</span> ·
+            Skipped <span className="text-[var(--skipped)]">{stats.left}</span>
+          </p>
+          <div className="mt-6 flex flex-col gap-3">
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => void loadAllTopics("unstudied")}
+            >
+              Continue studying
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (unstudiedTopics.length === 0) {
+      return (
+        <div className="panel p-5 text-sm text-[var(--muted)]">
+          Nothing left to study here — pick a topic from All or mark one as Study
+          again.
+        </div>
+      );
+    }
+
+    return (
+      <TopicDeck
+        key={`deck-${deckKey}-${unstudiedTopics[0]?.id ?? "none"}`}
+        topics={unstudiedTopics}
+        leftLabel="Skip"
+        rightLabel="Studied"
+        leftStatus="skipped"
+        rightStatus="studied"
+        completedCount={studiedCount}
+        totalCount={topicTotal}
+        onActiveTopicChange={handleActiveTopicChange}
+        onComplete={(s) => {
+          applyDeckProgress(s);
+          setMode("done");
+        }}
+      />
+    );
+  }
 
   return (
-    <main className={shellClass}>
+    <main className="app-shell app-shell-study">
       <header className="mb-4 flex shrink-0 items-center justify-between gap-3">
         {mode === "focus" ? (
           <button
             type="button"
-            onClick={() => void returnToAllList()}
+            onClick={clearFocus}
             className="text-sm text-[var(--muted)] hover:text-[var(--ink)]"
           >
-            ← All topics
+            <span className="md:hidden">← All topics</span>
+            <span className="hidden md:inline">← Back to queue</span>
           </button>
         ) : (
           <Link
@@ -153,10 +405,10 @@ export default function StudyPage() {
           </Link>
         )}
         {mode !== "focus" && (
-          <div className="flex rounded-full border border-[var(--line)] p-0.5 text-xs">
+          <div className="study-filter-tabs flex rounded-full border border-[var(--line)] p-0.5 text-xs">
             <button
               type="button"
-              onClick={() => setFilter("unstudied")}
+              onClick={() => syncModeAfterFilter("unstudied")}
               className={`rounded-full px-3 py-1 ${
                 filter === "unstudied"
                   ? "bg-[var(--accent)] text-[#041018]"
@@ -167,7 +419,7 @@ export default function StudyPage() {
             </button>
             <button
               type="button"
-              onClick={() => setFilter("all")}
+              onClick={() => syncModeAfterFilter("all")}
               className={`rounded-full px-3 py-1 ${
                 filter === "all"
                   ? "bg-[var(--accent)] text-[#041018]"
@@ -184,11 +436,47 @@ export default function StudyPage() {
         {categoryName}
       </h1>
 
-      <div
-        className={
-          mode === "list" || mode === "done" ? "flex-1" : "min-h-0 flex-1"
-        }
-      >
+      {/* Desktop: study card left, All topics right */}
+      <div className="study-split">
+        <section className="study-split-deck min-h-0">
+          <div className="mb-2 shrink-0">
+            <p className="font-[family-name:var(--font-display)] text-sm text-[var(--ink)]">
+              {mode === "focus" ? "Focused card" : "To study"}
+            </p>
+            <p className="text-xs text-[var(--muted)]">
+              {mode === "focus"
+                ? "Esc to return to the queue"
+                : `${unstudiedTopics.length} remaining`}
+            </p>
+          </div>
+          <div className="min-h-0 flex-1">{renderDeckPanel()}</div>
+        </section>
+
+        <section className="study-split-list">
+          <div className="shrink-0 border-b border-[var(--line)] px-3.5 py-3">
+            <p className="font-[family-name:var(--font-display)] text-sm text-[var(--ink)]">
+              All topics
+            </p>
+            <p className="mt-0.5 text-xs text-[var(--muted)]">
+              {allTopics.length} topics · {studiedCount} studied
+            </p>
+          </div>
+          <div className="study-split-list-scroll" ref={listScrollRef}>
+            {mode === "loading" ? (
+              <p className="px-1 text-sm text-[var(--muted)]">Loading…</p>
+            ) : allTopics.length === 0 ? (
+              <p className="px-1 text-sm text-[var(--muted)]">
+                No topics in this category.
+              </p>
+            ) : (
+              renderTopicList(allTopics, { compact: true })
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Mobile: To study / All toggle (unchanged interaction) */}
+      <div className="study-mobile-only">
         {mode === "loading" && (
           <p className="text-[var(--muted)]">Loading topics…</p>
         )}
@@ -202,14 +490,13 @@ export default function StudyPage() {
         )}
 
         {mode === "list" && (
-          <div className="space-y-2 pb-6">
+          <div
+            className="min-h-0 flex-1 space-y-2 overflow-y-auto pb-6"
+            ref={mobileListScrollRef}
+          >
             <p className="mb-3 text-sm text-[var(--muted)]">
-              {topics.length} topics ·{" "}
-              {
-                topics.filter(
-                  (t) => t.status === "studied" || t.status === "correct"
-                ).length
-              }{" "}
+              {mobileTopics.length} topics ·{" "}
+              {mobileTopics.filter((t) => isStudiedStatus(t.status)).length}{" "}
               studied
             </p>
             <p className="mb-3 text-xs text-[var(--muted)]">
@@ -217,98 +504,23 @@ export default function StudyPage() {
               <span className="text-[var(--accent)]">Study again</span> on
               Studied items to return them to To study.
             </p>
-            <ul className="space-y-2">
-              {topics.map((topic, index) => {
-                const meta = statusMeta(topic.status);
-                const isStudied =
-                  topic.status === "studied" || topic.status === "correct";
-                return (
-                  <li
-                    key={topic.id}
-                    className="rounded-xl border border-[var(--line)] bg-[rgba(10,22,34,0.55)] px-3.5 py-3 transition hover:border-[var(--accent)]/40"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <button
-                        type="button"
-                        className="min-w-0 flex-1 text-left active:opacity-80"
-                        onClick={() => {
-                          setFocusIndex(index);
-                          setMode("focus");
-                        }}
-                      >
-                        {topic.section && (
-                          <p className="mb-0.5 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
-                            {topic.section}
-                          </p>
-                        )}
-                        <p className="font-medium leading-snug text-[var(--ink)]">
-                          {topic.title}
-                        </p>
-                        <p className="mt-1 text-[11px] text-[var(--accent)]">
-                          Open card →
-                        </p>
-                      </button>
-                      <div className="flex shrink-0 flex-col items-end gap-1.5">
-                        <span
-                          className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${meta.className}`}
-                        >
-                          {meta.label}
-                        </span>
-                        {isStudied && (
-                          <button
-                            type="button"
-                            className="text-[11px] font-medium text-[var(--accent)] underline-offset-2 hover:underline"
-                            onClick={async () => {
-                              const res = await fetch("/api/progress", {
-                                method: "DELETE",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({ topicId: topic.id }),
-                              });
-                              if (!res.ok) return;
-                              setTopics((prev) =>
-                                prev.map((t) =>
-                                  t.id === topic.id
-                                    ? { ...t, status: null }
-                                    : t
-                                )
-                              );
-                              setAllTopics((prev) =>
-                                prev.map((t) =>
-                                  t.id === topic.id
-                                    ? { ...t, status: null }
-                                    : t
-                                )
-                              );
-                              setStudiedCount((c) => Math.max(0, c - 1));
-                            }}
-                          >
-                            Study again
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            {renderTopicList(mobileTopics)}
           </div>
         )}
 
-        {mode === "deck" && topics.length > 0 && (
+        {mode === "deck" && unstudiedTopics.length > 0 && (
           <TopicDeck
-            key={`deck-${studiedCount}-${topics.length}-${topics[0].id}`}
-            topics={topics}
+            key={`m-deck-${deckKey}-${unstudiedTopics[0].id}`}
+            topics={unstudiedTopics}
             leftLabel="Skip"
             rightLabel="Studied"
             leftStatus="skipped"
             rightStatus="studied"
             completedCount={studiedCount}
             totalCount={topicTotal}
+            onActiveTopicChange={handleActiveTopicChange}
             onComplete={(s) => {
-              setStats(s);
-              setStudiedCount((c) => c + s.right);
+              applyDeckProgress(s);
               setMode("done");
             }}
           />
@@ -316,7 +528,7 @@ export default function StudyPage() {
 
         {mode === "focus" && focusTopics.length > 0 && focusIndex !== null && (
           <TopicDeck
-            key={`focus-${focusIndex}-${focusTopics[0].id}`}
+            key={`m-focus-${focusIndex}-${focusTopics[0].id}`}
             topics={focusTopics}
             leftLabel="Skip"
             rightLabel="Studied"
@@ -324,8 +536,10 @@ export default function StudyPage() {
             rightStatus="studied"
             positionOffset={focusIndex}
             totalCount={topicTotal || allTopics.length}
-            onComplete={() => {
-              void returnToAllList();
+            onActiveTopicChange={handleActiveTopicChange}
+            onComplete={(s) => {
+              applyDeckProgress(s);
+              void loadAllTopics("all");
             }}
           />
         )}
@@ -343,26 +557,14 @@ export default function StudyPage() {
               <button
                 type="button"
                 className="btn-primary"
-                onClick={() => {
-                  setMode("loading");
-                  void fetch(
-                    `/api/topics?categoryId=${params.id}&filter=unstudied`
-                  )
-                    .then((r) => r.json())
-                    .then((d) => {
-                      const list = (d.topics ?? []) as TopicRow[];
-                      setFilter("unstudied");
-                      setTopics(list);
-                      setMode(list.length ? "deck" : "empty");
-                    });
-                }}
+                onClick={() => void loadAllTopics("unstudied")}
               >
                 Continue studying
               </button>
               <button
                 type="button"
                 className="rounded-xl border border-[var(--line)] py-3 text-sm text-[var(--ink-soft)]"
-                onClick={() => setFilter("all")}
+                onClick={() => syncModeAfterFilter("all")}
               >
                 View all topics
               </button>
