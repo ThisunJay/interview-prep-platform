@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Sora } from "next/font/google";
+import { GeminiKeyModal } from "@/components/GeminiKeyModal";
+import { StudyBuddyProvider } from "@/components/StudyBuddyProvider";
+import { StudyBuddyWidget } from "@/components/StudyBuddyWidget";
+import { UserProfileProvider } from "@/components/UserProfileProvider";
 import "./globals.css";
 
 const display = Fraunces({
@@ -31,7 +35,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <UserProfileProvider>
+          <StudyBuddyProvider>
+            {children}
+            <StudyBuddyWidget />
+            <GeminiKeyModal />
+          </StudyBuddyProvider>
+        </UserProfileProvider>
+      </body>
     </html>
   );
 }

@@ -10,7 +10,10 @@
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.69",
+    "@ai-sdk/react": "^4.0.102",
     "@neondatabase/serverless": "^1.1.0",
+    "ai": "^7.0.99",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "framer-motion": "^13.0.0",

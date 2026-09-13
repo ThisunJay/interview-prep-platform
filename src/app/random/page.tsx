@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { TopicDeck } from "@/components/TopicDeck";
 import type { CardTopic } from "@/components/SwipeCard";
+import { ProfileMenu } from "@/components/ProfileMenu";
 
 const COUNTS = [10, 20, 30, 50] as const;
 
@@ -143,9 +144,12 @@ export default function RandomPage() {
   return (
     <main className={shellClass}>
       <header className="mb-6 shrink-0">
-        <Link href="/" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
-          ← Categories
-        </Link>
+        <div className="flex items-start justify-between gap-3">
+          <Link href="/" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+            ← Categories
+          </Link>
+          <ProfileMenu />
+        </div>
         <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl">
           Random drill
         </h1>
@@ -155,7 +159,7 @@ export default function RandomPage() {
             or left if you missed it.
           </span>
           <span className="deck-hint-desktop">
-            Press Space to reveal, then use the Got it / Missed buttons.
+            Press Space to reveal, then ← Missed / → Got it (or the buttons).
           </span>
         </p>
       </header>

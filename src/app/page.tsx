@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CategoryList } from "@/components/CategoryList";
-import { LogoutButton } from "@/components/LogoutButton";
+import { ProfileMenu } from "@/components/ProfileMenu";
+import { StudyBuddyTopicSync } from "@/components/StudyBuddyTopicSync";
 import { getCategoriesForUser } from "@/lib/categories";
 import { getSession } from "@/lib/session";
 
@@ -12,9 +13,11 @@ export default async function HomePage() {
   if (!session) redirect("/login");
 
   const categories = await getCategoriesForUser(session.userId);
+  const topicNames = categories.map((c) => c.name);
 
   return (
     <main className="app-shell">
+      <StudyBuddyTopicSync topicNames={topicNames} />
       <header className="fade-up mb-8 flex items-start justify-between gap-4">
         <div>
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
@@ -27,7 +30,7 @@ export default async function HomePage() {
             Hi {session.username} — pick a category to study.
           </p>
         </div>
-        <LogoutButton />
+        <ProfileMenu username={session.username} />
       </header>
 
       <section className="fade-up space-y-3" style={{ animationDelay: "80ms" }}>

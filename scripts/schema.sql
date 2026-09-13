@@ -6,6 +6,12 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Profile settings (safe for existing DBs)
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS gemini_api_key_encrypted TEXT;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS keyboard_shortcuts_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+
 CREATE TABLE IF NOT EXISTS categories (
   id SERIAL PRIMARY KEY,
   name TEXT UNIQUE NOT NULL,

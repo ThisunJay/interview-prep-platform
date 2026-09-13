@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { TopicDeck } from "@/components/TopicDeck";
 import type { CardTopic } from "@/components/SwipeCard";
+import { ProfileMenu } from "@/components/ProfileMenu";
+import { StudyBuddyTopicSync } from "@/components/StudyBuddyTopicSync";
 
 type TopicRow = CardTopic & {
   status?: string | null;
@@ -386,6 +388,7 @@ export default function StudyPage() {
 
   return (
     <main className="app-shell app-shell-study">
+      <StudyBuddyTopicSync categoryName={categoryName || null} />
       <header className="mb-4 flex shrink-0 items-center justify-between gap-3">
         {mode === "focus" ? (
           <button
@@ -404,32 +407,35 @@ export default function StudyPage() {
             ← Categories
           </Link>
         )}
-        {mode !== "focus" && (
-          <div className="study-filter-tabs flex rounded-full border border-[var(--line)] p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => syncModeAfterFilter("unstudied")}
-              className={`rounded-full px-3 py-1 ${
-                filter === "unstudied"
-                  ? "bg-[var(--accent)] text-[#041018]"
-                  : "text-[var(--muted)]"
-              }`}
-            >
-              To study
-            </button>
-            <button
-              type="button"
-              onClick={() => syncModeAfterFilter("all")}
-              className={`rounded-full px-3 py-1 ${
-                filter === "all"
-                  ? "bg-[var(--accent)] text-[#041018]"
-                  : "text-[var(--muted)]"
-              }`}
-            >
-              All
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {mode !== "focus" && (
+            <div className="study-filter-tabs flex rounded-full border border-[var(--line)] p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => syncModeAfterFilter("unstudied")}
+                className={`rounded-full px-3 py-1 ${
+                  filter === "unstudied"
+                    ? "bg-[var(--accent)] text-[#041018]"
+                    : "text-[var(--muted)]"
+                }`}
+              >
+                To study
+              </button>
+              <button
+                type="button"
+                onClick={() => syncModeAfterFilter("all")}
+                className={`rounded-full px-3 py-1 ${
+                  filter === "all"
+                    ? "bg-[var(--accent)] text-[#041018]"
+                    : "text-[var(--muted)]"
+                }`}
+              >
+                All
+              </button>
+            </div>
+          )}
+          <ProfileMenu />
+        </div>
       </header>
 
       <h1 className="mb-4 shrink-0 font-[family-name:var(--font-display)] text-2xl">

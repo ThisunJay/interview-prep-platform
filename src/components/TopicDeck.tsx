@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import { useUserProfile } from "@/components/UserProfileProvider";
 import {
   SwipeCard,
   type CardTopic,
@@ -44,6 +45,8 @@ export function TopicDeck({
   onComplete,
   onActiveTopicChange,
 }: DeckProps) {
+  const { profile } = useUserProfile();
+  const keyboardEnabled = profile?.keyboardShortcutsEnabled ?? false;
   const [index, setIndex] = useState(0);
   const [stats, setStats] = useState({ right: 0, left: 0 });
   const [busy, setBusy] = useState(false);
@@ -134,8 +137,6 @@ export function TopicDeck({
   }
 
   useEffect(() => {
-    if (!revealMode) return;
-
     function onKeyDown(event: KeyboardEvent) {
       if (busyRef.current || bridgingRef.current) return;
 
@@ -150,15 +151,26 @@ export function TopicDeck({
         return;
       }
 
-      if (event.key === " " || event.key === "Enter") {
+      if (revealMode && (event.key === " " || event.key === "Enter")) {
         event.preventDefault();
         cardRef.current?.reveal();
+        return;
+      }
+
+      if (!keyboardEnabled) return;
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        cardRef.current?.swipe("left");
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        cardRef.current?.swipe("right");
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [revealMode]);
+  }, [revealMode, keyboardEnabled]);
 
   if (!current && !bridging) {
     return (
@@ -176,8 +188,13 @@ export function TopicDeck({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="mb-3 flex shrink-0 items-center justify-between px-1 text-sm text-[var(--muted)]">
+      <div className="mb-3 flex shrink-0 items-center justify-between gap-2 px-1 text-sm text-[var(--muted)]">
         <span>{counterLeft}</span>
+        {keyboardEnabled ? (
+          <span className="deck-key-hint deck-hint-desktop" aria-hidden>
+            ← {leftLabel ?? "Skip"} · → {rightLabel ?? "Studied"}
+          </span>
+        ) : null}
         <span>{Math.max(remaining - (bridging ? 1 : 0), 0)} left</span>
       </div>
 

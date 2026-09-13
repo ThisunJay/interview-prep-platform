@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, type MouseEvent } from "react";
 import { animate, motion, useMotionValue, type PanInfo } from "framer-motion";
 import type { CategoryRow } from "@/lib/category-types";
+import { useStudyBuddy } from "@/components/StudyBuddyProvider";
 
 const ACTION_WIDTH = 76;
 const PIN_THRESHOLD = 56;
@@ -35,6 +36,7 @@ function PinIcon({ filled }: { filled: boolean }) {
 
 export function SwipeCategoryRow({ category, onTogglePin }: SwipeCategoryRowProps) {
   const router = useRouter();
+  const { setActiveCategory } = useStudyBuddy();
   const x = useMotionValue(0);
   const dragDistance = useRef(0);
   const toggledThisGesture = useRef(false);
@@ -78,6 +80,7 @@ export function SwipeCategoryRow({ category, onTogglePin }: SwipeCategoryRowProp
 
   function handleRowClick() {
     if (dragDistance.current > 8) return;
+    setActiveCategory(category.name);
     router.push(`/study/${category.id}`);
   }
 
