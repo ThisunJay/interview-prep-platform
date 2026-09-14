@@ -44,6 +44,7 @@ export function StudyBuddyWidget() {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup");
   const hideOnHome = pathname === "/";
+  const hideOnAdmin = pathname.startsWith("/admin");
 
   const transport = useMemo(
     () =>
@@ -72,15 +73,15 @@ export function StudyBuddyWidget() {
   }, [messages, open, busy]);
 
   useEffect(() => {
-    if (hideOnHome || hideOnAuth) setOpen(false);
-  }, [hideOnHome, hideOnAuth]);
+    if (hideOnHome || hideOnAuth || hideOnAdmin) setOpen(false);
+  }, [hideOnHome, hideOnAuth, hideOnAdmin]);
 
   useEffect(() => {
     if (hasMessages) setTopicPickerOpen(false);
     else setTopicPickerOpen(true);
   }, [hasMessages]);
 
-  if (hideOnAuth || hideOnHome) return null;
+  if (hideOnAuth || hideOnHome || hideOnAdmin) return null;
 
   function onFabClick() {
     if (profileLoading) return;

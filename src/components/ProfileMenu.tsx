@@ -88,6 +88,20 @@ export function ProfileMenu({ username: usernameProp }: ProfileMenuProps) {
             {profile?.hasGeminiKey ? "Update Gemini API key" : "Set Gemini API key"}
           </button>
 
+          {profile?.isSystemAdmin ? (
+            <button
+              type="button"
+              role="menuitem"
+              className="profile-dropdown-item"
+              onClick={() => {
+                setOpen(false);
+                router.push("/admin");
+              }}
+            >
+              Admin dashboard
+            </button>
+          ) : null}
+
           <label className="profile-dropdown-toggle" role="menuitemcheckbox">
             <span>
               Keyboard study markers

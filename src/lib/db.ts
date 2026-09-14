@@ -11,6 +11,7 @@ export type User = {
   username: string;
   password_hash: string;
   allow: boolean;
+  is_system_admin?: boolean;
 };
 
 export type Category = {

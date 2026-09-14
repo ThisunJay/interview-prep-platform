@@ -1,0 +1,173 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+
+type AdminUser = {
+  id: number;
+  username: string;
+  allow: boolean;
+  isSystemAdmin: boolean;
+  createdAt: string;
+  hasGeminiKey: boolean;
+  studiedCount: number;
+  drillCount: number;
+};
+
+type Filter = "all" | "pending" | "allowed";
+
+export default function AdminUsersPage() {
+  const [filter, setFilter] = useState<Filter>("all");
+  const [q, setQ] = useState("");
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    const params = new URLSearchParams({ filter });
+    if (q.trim()) params.set("q", q.trim());
+    const res = await fetch(`/api/admin/users?${params}`);
+    if (!res.ok) {
+      setError("Could not load users");
+      return;
+    }
+    const data = await res.json();
+    setUsers(data.users as AdminUser[]);
+  }, [filter, q]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => void load(), 150);
+    return () => window.clearTimeout(t);
+  }, [load]);
+
+  async function setAllow(id: number, allow: boolean) {
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allow }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error ?? "Update failed"
+        );
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Update failed");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div className="admin-page">
+      <header className="admin-page-header">
+        <div>
+          <p className="admin-kicker">People</p>
+          <h2 className="admin-title">Users</h2>
+        </div>
+      </header>
+
+      <div className="admin-toolbar">
+        <div className="admin-filter-tabs">
+          {(["all", "pending", "allowed"] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              className={`admin-filter-tab${filter === f ? " is-active" : ""}`}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        <input
+          className="field admin-search"
+          placeholder="Search username…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
+
+      {error ? <p className="admin-error">{error}</p> : null}
+
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Status</th>
+              <th>Studied</th>
+              <th>Drills</th>
+              <th>Gemini</th>
+              <th>Joined</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id}>
+                <td>
+                  <Link href={`/admin/users/${u.id}`} className="admin-link">
+                    {u.username}
+                  </Link>
+                  {u.isSystemAdmin ? (
+                    <span className="admin-badge">admin</span>
+                  ) : null}
+                </td>
+                <td>
+                  <span
+                    className={`admin-status${u.allow ? " is-ok" : " is-blocked"}`}
+                  >
+                    {u.allow ? "Allowed" : "Blocked"}
+                  </span>
+                </td>
+                <td>{u.studiedCount}</td>
+                <td>{u.drillCount}</td>
+                <td>{u.hasGeminiKey ? "Yes" : "—"}</td>
+                <td>{formatDate(u.createdAt)}</td>
+                <td className="admin-row-actions">
+                  {u.allow ? (
+                    <button
+                      type="button"
+                      className="admin-secondary-btn admin-table-btn is-danger"
+                      disabled={busyId === u.id}
+                      onClick={() => void setAllow(u.id, false)}
+                    >
+                      Revoke
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-primary admin-table-btn"
+                      disabled={busyId === u.id}
+                      onClick={() => void setAllow(u.id, true)}
+                    >
+                      Approve
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {users.length === 0 ? (
+          <p className="admin-muted admin-empty">No users match.</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function formatDate(value: string) {
+  try {
+    return new Date(value).toLocaleDateString();
+  } catch {
+    return value;
+  }
+}

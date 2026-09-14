@@ -15,6 +15,7 @@ type UserProfile = {
   username: string;
   hasGeminiKey: boolean;
   keyboardShortcutsEnabled: boolean;
+  isSystemAdmin: boolean;
 };
 
 type UserProfileContextValue = {
@@ -64,6 +65,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
         username,
         hasGeminiKey: Boolean(data.hasGeminiKey),
         keyboardShortcutsEnabled: Boolean(data.keyboardShortcutsEnabled),
+        isSystemAdmin: Boolean(data.isSystemAdmin),
       });
     } catch {
       setProfile(null);

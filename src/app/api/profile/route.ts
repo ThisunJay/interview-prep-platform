@@ -13,7 +13,8 @@ export async function GET() {
     SELECT
       username,
       (gemini_api_key_encrypted IS NOT NULL AND gemini_api_key_encrypted <> '') AS has_gemini_key,
-      COALESCE(keyboard_shortcuts_enabled, FALSE) AS keyboard_shortcuts_enabled
+      COALESCE(keyboard_shortcuts_enabled, FALSE) AS keyboard_shortcuts_enabled,
+      COALESCE(is_system_admin, FALSE) AS is_system_admin
     FROM users
     WHERE id = ${session.userId}
     LIMIT 1
@@ -28,6 +29,7 @@ export async function GET() {
     username: String(row.username ?? session.username),
     hasGeminiKey: Boolean(row.has_gemini_key),
     keyboardShortcutsEnabled: Boolean(row.keyboard_shortcuts_enabled),
+    isSystemAdmin: Boolean(row.is_system_admin),
   });
 }
 
