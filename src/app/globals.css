@@ -810,13 +810,25 @@ body {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 0.5rem;
+  align-items: end;
   padding: 0.75rem 1rem 1rem;
   border-top: 1px solid var(--line);
+}
+
+.study-buddy-composer {
+  min-height: 2.75rem;
+  max-height: 8.5rem;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.45;
+  field-sizing: content;
 }
 
 .study-buddy-send {
   padding-inline: 0.95rem;
   white-space: nowrap;
+  min-height: 2.75rem;
+  align-self: end;
 }
 
 @media (max-width: 480px) {

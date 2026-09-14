@@ -7,12 +7,13 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { sql } from "@/lib/db";
 import { decryptSecret } from "@/lib/secret-crypto";
 import { getSession } from "@/lib/session";
+import { trimMessagesForModel } from "@/lib/study-buddy-chat-storage";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function buildSystemPrompt(topic: string) {
-  return `You are an elite technical interviewer. The current focus topic is ${topic}. You must strictly refuse to answer any questions or hold discussions outside of ${topic}. If the user shifts topics, gently but firmly redirect them back to the core topic. Conduct a sharp, realistic behavioral or technical interview prep deep-dive.
+function buildSystemPrompt(topic: string, summary?: string | null) {
+  const base = `You are an elite technical interviewer. The current focus topic is ${topic}. You must strictly refuse to answer any questions or hold discussions outside of ${topic}. If the user shifts topics, gently but firmly redirect them back to the core topic. Conduct a sharp, realistic behavioral or technical interview prep deep-dive.
 
 Guidelines:
 - Prefer probing follow-up questions over long lectures.
@@ -20,6 +21,14 @@ Guidelines:
 - When explaining, keep answers structured and interview-ready (definition → why it matters → how it works → tradeoffs).
 - If the user asks for something unrelated to ${topic}, decline briefly and steer them back.
 - Do not reveal or invent API keys, secrets, or credentials.`;
+
+  const trimmed = summary?.trim();
+  if (!trimmed) return base;
+
+  return `${base}
+
+Earlier conversation summary (for continuity only — the recent messages below are authoritative for the latest turns):
+${trimmed}`;
 }
 
 export async function POST(req: Request) {
@@ -57,7 +66,11 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { messages?: UIMessage[]; category?: string };
+  let body: {
+    messages?: UIMessage[];
+    category?: string;
+    conversationSummary?: string | null;
+  };
   try {
     body = await req.json();
   } catch {
@@ -77,12 +90,21 @@ export async function POST(req: Request) {
     return Response.json({ error: "messages are required" }, { status: 400 });
   }
 
+  const { recentMessages, summary } = trimMessagesForModel(
+    messages,
+    body.conversationSummary ?? null
+  );
+
+  if (recentMessages.length === 0) {
+    return Response.json({ error: "messages are required" }, { status: 400 });
+  }
+
   try {
     const google = createGoogleGenerativeAI({ apiKey });
     const result = streamText({
       model: google("gemini-3.6-flash"),
-      system: buildSystemPrompt(category),
-      messages: await convertToModelMessages(messages),
+      system: buildSystemPrompt(category, summary),
+      messages: await convertToModelMessages(recentMessages),
     });
 
     return result.toUIMessageStreamResponse();

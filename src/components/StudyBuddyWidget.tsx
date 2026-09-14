@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { usePathname } from "next/navigation";
 import {
   useEffect,
@@ -9,11 +9,18 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type KeyboardEvent,
 } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useStudyBuddy } from "@/components/StudyBuddyProvider";
 import { useUserProfile } from "@/components/UserProfileProvider";
+import {
+  clearStudyBuddyChat,
+  loadStudyBuddyChat,
+  saveStudyBuddyChat,
+  selectContextForModel,
+} from "@/lib/study-buddy-chat-storage";
 
 function messageText(message: {
   parts?: Array<{ type: string; text?: string }>;
@@ -33,8 +40,15 @@ export function StudyBuddyWidget() {
   const [input, setInput] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const [topicPickerOpen, setTopicPickerOpen] = useState(true);
+  const [hydratedCategory, setHydratedCategory] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   const categoryRef = useRef(activeCategory);
+  const summaryRef = useRef<string | null>(null);
+  const latestByTopicRef = useRef(
+    new Map<string, { messages: UIMessage[]; summary: string | null }>()
+  );
+  const prevCategoryRef = useRef(activeCategory);
 
   categoryRef.current = activeCategory;
 
@@ -50,9 +64,24 @@ export function StudyBuddyWidget() {
     () =>
       new DefaultChatTransport({
         api: "/api/study-buddy",
-        body: () => ({
-          category: categoryRef.current,
-        }),
+        prepareSendMessagesRequest: ({ messages, body, id, trigger, messageId }) => {
+          const { recentMessages, summary } = selectContextForModel(
+            messages as UIMessage[],
+            summaryRef.current
+          );
+          summaryRef.current = summary;
+          return {
+            body: {
+              ...(body ?? {}),
+              id,
+              trigger,
+              messageId,
+              category: categoryRef.current,
+              conversationSummary: summary,
+              messages: recentMessages,
+            },
+          };
+        },
       }),
     []
   );
@@ -65,6 +94,44 @@ export function StudyBuddyWidget() {
 
   const busy = status === "submitted" || status === "streaming";
   const hasMessages = messages.length > 0;
+
+  if (hydratedCategory === activeCategory) {
+    latestByTopicRef.current.set(activeCategory, {
+      messages: messages as UIMessage[],
+      summary: summaryRef.current,
+    });
+  }
+
+  // Save previous topic, then hydrate the new one from localStorage.
+  useEffect(() => {
+    const prev = prevCategoryRef.current;
+    if (prev !== activeCategory) {
+      const cached = latestByTopicRef.current.get(prev);
+      if (cached) {
+        saveStudyBuddyChat(prev, cached.messages, cached.summary);
+      }
+      prevCategoryRef.current = activeCategory;
+    }
+
+    const stored = loadStudyBuddyChat(activeCategory);
+    summaryRef.current = stored?.summary ?? null;
+    setMessages(stored?.messages ?? []);
+    setHydratedCategory(activeCategory);
+    clearError();
+    setLocalError(null);
+  }, [activeCategory, setMessages, clearError]);
+
+  // Persist full UI history (and rolling summary) after turns settle.
+  useEffect(() => {
+    if (hydratedCategory !== activeCategory) return;
+    if (busy) return;
+    const saved = saveStudyBuddyChat(
+      activeCategory,
+      messages as UIMessage[],
+      summaryRef.current
+    );
+    summaryRef.current = saved.summary;
+  }, [messages, busy, activeCategory, hydratedCategory]);
 
   useEffect(() => {
     const el = listRef.current;
@@ -81,6 +148,13 @@ export function StudyBuddyWidget() {
     else setTopicPickerOpen(true);
   }, [hasMessages]);
 
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 136)}px`;
+  }, [input]);
+
   if (hideOnAuth || hideOnHome || hideOnAdmin) return null;
 
   function onFabClick() {
@@ -93,10 +167,25 @@ export function StudyBuddyWidget() {
   }
 
   function clearChat() {
+    clearStudyBuddyChat(activeCategory);
+    summaryRef.current = null;
+    latestByTopicRef.current.set(activeCategory, {
+      messages: [],
+      summary: null,
+    });
     setMessages([]);
     clearError();
     setLocalError(null);
     setTopicPickerOpen(true);
+  }
+
+  function onComposerKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!busy && input.trim()) {
+        e.currentTarget.form?.requestSubmit();
+      }
+    }
   }
 
   async function onSubmit(e: FormEvent) {
@@ -239,8 +328,15 @@ export function StudyBuddyWidget() {
                   className="field"
                   value={activeCategory}
                   onChange={(e) => {
+                    // Persist current topic before switching (effect also saves when idle).
+                    if (!busy) {
+                      saveStudyBuddyChat(
+                        activeCategory,
+                        messages as UIMessage[],
+                        summaryRef.current
+                      );
+                    }
                     setActiveCategory(e.target.value);
-                    setMessages([]);
                     clearError();
                     setTopicPickerOpen(true);
                   }}
@@ -306,13 +402,16 @@ export function StudyBuddyWidget() {
           )}
 
           <form className="study-buddy-form" onSubmit={onSubmit}>
-            <input
-              className="field"
+            <textarea
+              ref={composerRef}
+              className="field study-buddy-composer"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onComposerKeyDown}
               placeholder={`Ask about ${activeCategory}…`}
               disabled={busy}
               aria-label="Message"
+              rows={1}
             />
             {busy ? (
               <button
