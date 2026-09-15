@@ -30,6 +30,7 @@ export async function GET() {
     SELECT
       t.id,
       t.title,
+      t.category_id,
       c.name AS category_name,
       COUNT(up.id) FILTER (WHERE up.status = 'skipped')::int AS skipped_count,
       COUNT(up.id) FILTER (WHERE up.status = 'failed')::int AS failed_count,
@@ -38,7 +39,7 @@ export async function GET() {
     FROM topics t
     JOIN categories c ON c.id = t.category_id
     LEFT JOIN user_progress up ON up.topic_id = t.id
-    GROUP BY t.id, t.title, c.name, t.description
+    GROUP BY t.id, t.title, t.category_id, c.name, t.description
     HAVING
       COUNT(up.id) FILTER (WHERE up.status IN ('skipped', 'failed')) > 0
       OR (t.description ILIKE '%_No guide%' OR t.description = '')
@@ -61,6 +62,7 @@ export async function GET() {
     weakTopics: weakTopics.map((row) => ({
       id: Number(row.id),
       title: String(row.title),
+      categoryId: Number(row.category_id),
       categoryName: String(row.category_name),
       skippedCount: Number(row.skipped_count ?? 0),
       failedCount: Number(row.failed_count ?? 0),
