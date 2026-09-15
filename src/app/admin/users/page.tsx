@@ -96,70 +96,70 @@ export default function AdminUsersPage() {
 
       {error ? <p className="admin-error">{error}</p> : null}
 
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Status</th>
-              <th>Studied</th>
-              <th>Drills</th>
-              <th>Gemini</th>
-              <th>Joined</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>
+      {users.length === 0 ? (
+        <p className="admin-muted admin-empty">No users match.</p>
+      ) : (
+        <div className="admin-card-list">
+          {users.map((u) => (
+            <article key={u.id} className="admin-card">
+              <div className="admin-card-head">
+                <div>
                   <Link href={`/admin/users/${u.id}`} className="admin-link">
                     {u.username}
                   </Link>
                   {u.isSystemAdmin ? (
                     <span className="admin-badge">admin</span>
                   ) : null}
-                </td>
-                <td>
-                  <span
-                    className={`admin-status${u.allow ? " is-ok" : " is-blocked"}`}
+                </div>
+                <span
+                  className={`admin-status${u.allow ? " is-ok" : " is-blocked"}`}
+                >
+                  {u.allow ? "Allowed" : "Blocked"}
+                </span>
+              </div>
+              <dl className="admin-card-meta-grid">
+                <div>
+                  <dt>Studied</dt>
+                  <dd>{u.studiedCount}</dd>
+                </div>
+                <div>
+                  <dt>Drills</dt>
+                  <dd>{u.drillCount}</dd>
+                </div>
+                <div>
+                  <dt>Gemini</dt>
+                  <dd>{u.hasGeminiKey ? "Yes" : "—"}</dd>
+                </div>
+                <div>
+                  <dt>Joined</dt>
+                  <dd>{formatDate(u.createdAt)}</dd>
+                </div>
+              </dl>
+              <div className="admin-card-actions">
+                {u.allow ? (
+                  <button
+                    type="button"
+                    className="admin-secondary-btn admin-table-btn is-danger"
+                    disabled={busyId === u.id}
+                    onClick={() => void setAllow(u.id, false)}
                   >
-                    {u.allow ? "Allowed" : "Blocked"}
-                  </span>
-                </td>
-                <td>{u.studiedCount}</td>
-                <td>{u.drillCount}</td>
-                <td>{u.hasGeminiKey ? "Yes" : "—"}</td>
-                <td>{formatDate(u.createdAt)}</td>
-                <td className="admin-row-actions">
-                  {u.allow ? (
-                    <button
-                      type="button"
-                      className="admin-secondary-btn admin-table-btn is-danger"
-                      disabled={busyId === u.id}
-                      onClick={() => void setAllow(u.id, false)}
-                    >
-                      Revoke
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn-primary admin-table-btn"
-                      disabled={busyId === u.id}
-                      onClick={() => void setAllow(u.id, true)}
-                    >
-                      Approve
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {users.length === 0 ? (
-          <p className="admin-muted admin-empty">No users match.</p>
-        ) : null}
-      </div>
+                    Revoke
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-primary admin-table-btn"
+                    disabled={busyId === u.id}
+                    onClick={() => void setAllow(u.id, true)}
+                  >
+                    Approve
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

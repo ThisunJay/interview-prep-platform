@@ -84,13 +84,13 @@ export default function AdminInsightsPage() {
             <tbody>
               {data.categoryProgress.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.name}</td>
-                  <td>{c.topicCount}</td>
-                  <td>{c.uniqueLearners}</td>
-                  <td>{c.studiedMarks}</td>
-                  <td>{c.skippedMarks}</td>
-                  <td>{c.failedMarks}</td>
-                  <td>
+                  <td data-label="Category">{c.name}</td>
+                  <td data-label="Topics">{c.topicCount}</td>
+                  <td data-label="Learners">{c.uniqueLearners}</td>
+                  <td data-label="Studied">{c.studiedMarks}</td>
+                  <td data-label="Skipped">{c.skippedMarks}</td>
+                  <td data-label="Failed">{c.failedMarks}</td>
+                  <td data-label="Avg drill %">
                     {c.avgDrillAccuracy == null ? "—" : `${c.avgDrillAccuracy}%`}
                   </td>
                 </tr>
@@ -116,7 +116,7 @@ export default function AdminInsightsPage() {
               <tbody>
                 {data.topLearners.map((u) => (
                   <tr key={u.id}>
-                    <td>
+                    <td data-label="User">
                       <Link
                         href={`/admin/users/${u.id}`}
                         className="admin-link"
@@ -124,9 +124,9 @@ export default function AdminInsightsPage() {
                         {u.username}
                       </Link>
                     </td>
-                    <td>{u.studiedCount}</td>
-                    <td>{u.drillCount}</td>
-                    <td>
+                    <td data-label="Studied">{u.studiedCount}</td>
+                    <td data-label="Drills">{u.drillCount}</td>
+                    <td data-label="Avg %">
                       {u.avgAccuracy == null ? "—" : `${u.avgAccuracy}%`}
                     </td>
                   </tr>
@@ -154,10 +154,10 @@ export default function AdminInsightsPage() {
               <tbody>
                 {data.recentDrills.map((d) => (
                   <tr key={d.id}>
-                    <td>{formatDate(d.createdAt)}</td>
-                    <td>{d.username}</td>
-                    <td>{d.categoryName}</td>
-                    <td>
+                    <td data-label="When">{formatDate(d.createdAt)}</td>
+                    <td data-label="User">{d.username}</td>
+                    <td data-label="Category">{d.categoryName}</td>
+                    <td data-label="Score">
                       {d.correctCount}/{d.questionCount} ({d.accuracy}%)
                     </td>
                   </tr>

@@ -29,13 +29,18 @@ export default async function AdminLayout({
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <p className="admin-brand-kicker">Prep</p>
-          <h1 className="admin-brand-title">Admin</h1>
-          <p className="admin-brand-user">{session.username}</p>
+        <div className="admin-sidebar-top">
+          <div className="admin-brand">
+            <p className="admin-brand-kicker">Prep</p>
+            <h1 className="admin-brand-title">Admin</h1>
+            <p className="admin-brand-user">{session.username}</p>
+          </div>
+          <Link href="/" className="admin-exit admin-exit-mobile">
+            Study
+          </Link>
         </div>
         <AdminNav />
-        <Link href="/" className="admin-exit">
+        <Link href="/" className="admin-exit admin-exit-desktop">
           ← Back to study
         </Link>
       </aside>

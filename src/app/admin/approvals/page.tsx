@@ -76,38 +76,29 @@ export default function AdminApprovalsPage() {
           <p className="admin-muted">No pending approvals.</p>
         </div>
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Username</th>
-                <th>Signed up</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <Link href={`/admin/users/${u.id}`} className="admin-link">
-                      {u.username}
-                    </Link>
-                  </td>
-                  <td>{formatDate(u.createdAt)}</td>
-                  <td className="admin-row-actions">
-                    <button
-                      type="button"
-                      className="btn-primary admin-table-btn"
-                      disabled={busyId === u.id}
-                      onClick={() => void setAllow(u.id, true)}
-                    >
-                      Approve
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="admin-card-list">
+          {users.map((u) => (
+            <article key={u.id} className="admin-card">
+              <div className="admin-card-head">
+                <Link href={`/admin/users/${u.id}`} className="admin-link">
+                  {u.username}
+                </Link>
+                <span className="admin-card-meta">
+                  {formatDate(u.createdAt)}
+                </span>
+              </div>
+              <div className="admin-card-actions">
+                <button
+                  type="button"
+                  className="btn-primary admin-table-btn"
+                  disabled={busyId === u.id}
+                  onClick={() => void setAllow(u.id, true)}
+                >
+                  Approve
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
       )}
     </div>

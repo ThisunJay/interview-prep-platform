@@ -177,10 +177,10 @@ export default function AdminUserDetailPage() {
                     : 0;
                 return (
                   <tr key={c.id}>
-                    <td>{c.name}</td>
-                    <td>{c.studiedCount}</td>
-                    <td>{c.topicCount}</td>
-                    <td>{pct}%</td>
+                    <td data-label="Category">{c.name}</td>
+                    <td data-label="Studied">{c.studiedCount}</td>
+                    <td data-label="Total">{c.topicCount}</td>
+                    <td data-label="%">{pct}%</td>
                   </tr>
                 );
               })}
@@ -207,12 +207,12 @@ export default function AdminUserDetailPage() {
               <tbody>
                 {data.recentDrills.map((d) => (
                   <tr key={d.id}>
-                    <td>{formatDate(d.createdAt)}</td>
-                    <td>{d.categoryName}</td>
-                    <td>
+                    <td data-label="When">{formatDate(d.createdAt)}</td>
+                    <td data-label="Category">{d.categoryName}</td>
+                    <td data-label="Score">
                       {d.correctCount}/{d.questionCount}
                     </td>
-                    <td>{d.accuracy}%</td>
+                    <td data-label="Accuracy">{d.accuracy}%</td>
                   </tr>
                 ))}
               </tbody>

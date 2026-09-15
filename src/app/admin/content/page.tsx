@@ -73,19 +73,20 @@ export default function AdminContentPage() {
             <tbody>
               {data.categories.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.name}</td>
-                  <td>
+                  <td data-label="Name">{c.name}</td>
+                  <td data-label="Slug">
                     <code>{c.slug}</code>
                   </td>
-                  <td>{c.topicCount}</td>
+                  <td data-label="Topics">{c.topicCount}</td>
                   <td
+                    data-label="Missing guides"
                     className={
                       c.missingGuideCount > 0 ? "text-[var(--skipped)]" : ""
                     }
                   >
                     {c.missingGuideCount}
                   </td>
-                  <td>{c.learnersStudied}</td>
+                  <td data-label="Learners">{c.learnersStudied}</td>
                 </tr>
               ))}
             </tbody>
@@ -117,12 +118,12 @@ export default function AdminContentPage() {
               <tbody>
                 {data.weakTopics.map((t) => (
                   <tr key={t.id}>
-                    <td>{t.title}</td>
-                    <td>{t.categoryName}</td>
-                    <td>{t.skippedCount}</td>
-                    <td>{t.failedCount}</td>
-                    <td>{t.studiedCount}</td>
-                    <td>
+                    <td data-label="Topic">{t.title}</td>
+                    <td data-label="Category">{t.categoryName}</td>
+                    <td data-label="Skipped">{t.skippedCount}</td>
+                    <td data-label="Failed">{t.failedCount}</td>
+                    <td data-label="Studied">{t.studiedCount}</td>
+                    <td data-label="Guide">
                       {t.missingGuide ? (
                         <span className="admin-status is-blocked">Missing</span>
                       ) : (
