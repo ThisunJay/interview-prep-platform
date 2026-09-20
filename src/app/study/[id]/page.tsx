@@ -7,6 +7,7 @@ import { TopicDeck } from "@/components/TopicDeck";
 import type { CardTopic } from "@/components/SwipeCard";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { StudyBuddyTopicSync } from "@/components/StudyBuddyTopicSync";
+import { useUserProfile } from "@/components/UserProfileProvider";
 
 type TopicRow = CardTopic & {
   status?: string | null;
@@ -47,6 +48,8 @@ function statusMeta(status: string | null | undefined) {
 
 export default function StudyPage() {
   const params = useParams<{ id: string }>();
+  const { profile } = useUserProfile();
+  const studyDeckOnLeft = profile?.studyDeckOnLeft ?? true;
   const [allTopics, setAllTopics] = useState<TopicRow[]>([]);
   const [categoryName, setCategoryName] = useState("");
   const [topicTotal, setTopicTotal] = useState(0);
@@ -442,8 +445,10 @@ export default function StudyPage() {
         {categoryName}
       </h1>
 
-      {/* Desktop: study card left, All topics right */}
-      <div className="study-split">
+      {/* Desktop: study card + All topics (sides follow profile preference) */}
+      <div
+        className={`study-split${studyDeckOnLeft ? "" : " study-split--reversed"}`}
+      >
         <section className="study-split-deck min-h-0">
           <div className="mb-2 shrink-0">
             <p className="font-[family-name:var(--font-display)] text-sm text-[var(--ink)]">

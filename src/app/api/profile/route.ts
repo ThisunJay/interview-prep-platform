@@ -14,6 +14,7 @@ export async function GET() {
       username,
       (gemini_api_key_encrypted IS NOT NULL AND gemini_api_key_encrypted <> '') AS has_gemini_key,
       COALESCE(keyboard_shortcuts_enabled, FALSE) AS keyboard_shortcuts_enabled,
+      COALESCE(study_deck_on_left, TRUE) AS study_deck_on_left,
       COALESCE(is_system_admin, FALSE) AS is_system_admin
     FROM users
     WHERE id = ${session.userId}
@@ -29,13 +30,22 @@ export async function GET() {
     username: String(row.username ?? session.username),
     hasGeminiKey: Boolean(row.has_gemini_key),
     keyboardShortcutsEnabled: Boolean(row.keyboard_shortcuts_enabled),
+    studyDeckOnLeft: Boolean(row.study_deck_on_left),
     isSystemAdmin: Boolean(row.is_system_admin),
   });
 }
 
-const patchSchema = z.object({
-  keyboardShortcutsEnabled: z.boolean(),
-});
+const patchSchema = z
+  .object({
+    keyboardShortcutsEnabled: z.boolean().optional(),
+    studyDeckOnLeft: z.boolean().optional(),
+  })
+  .refine(
+    (body) =>
+      body.keyboardShortcutsEnabled !== undefined ||
+      body.studyDeckOnLeft !== undefined,
+    { message: "No preference fields provided" }
+  );
 
 export async function PATCH(request: Request) {
   const session = await getSession();
@@ -50,14 +60,25 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  await sql`
-    UPDATE users
-    SET keyboard_shortcuts_enabled = ${body.keyboardShortcutsEnabled}
-    WHERE id = ${session.userId}
-  `;
+  if (body.keyboardShortcutsEnabled !== undefined) {
+    await sql`
+      UPDATE users
+      SET keyboard_shortcuts_enabled = ${body.keyboardShortcutsEnabled}
+      WHERE id = ${session.userId}
+    `;
+  }
+
+  if (body.studyDeckOnLeft !== undefined) {
+    await sql`
+      UPDATE users
+      SET study_deck_on_left = ${body.studyDeckOnLeft}
+      WHERE id = ${session.userId}
+    `;
+  }
 
   return NextResponse.json({
     ok: true,
     keyboardShortcutsEnabled: body.keyboardShortcutsEnabled,
+    studyDeckOnLeft: body.studyDeckOnLeft,
   });
 }

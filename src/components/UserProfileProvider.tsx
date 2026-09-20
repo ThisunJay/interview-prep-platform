@@ -15,6 +15,7 @@ type UserProfile = {
   username: string;
   hasGeminiKey: boolean;
   keyboardShortcutsEnabled: boolean;
+  studyDeckOnLeft: boolean;
   isSystemAdmin: boolean;
 };
 
@@ -23,6 +24,7 @@ type UserProfileContextValue = {
   loading: boolean;
   refreshProfile: () => Promise<void>;
   setKeyboardShortcutsEnabled: (enabled: boolean) => Promise<void>;
+  setStudyDeckOnLeft: (onLeft: boolean) => Promise<void>;
   geminiModalOpen: boolean;
   openGeminiModal: () => void;
   closeGeminiModal: () => void;
@@ -65,6 +67,10 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
         username,
         hasGeminiKey: Boolean(data.hasGeminiKey),
         keyboardShortcutsEnabled: Boolean(data.keyboardShortcutsEnabled),
+        studyDeckOnLeft:
+          data.studyDeckOnLeft === undefined
+            ? true
+            : Boolean(data.studyDeckOnLeft),
         isSystemAdmin: Boolean(data.isSystemAdmin),
       });
     } catch {
@@ -93,12 +99,28 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshProfile]);
 
+  const setStudyDeckOnLeft = useCallback(async (onLeft: boolean) => {
+    setProfile((prev) =>
+      prev ? { ...prev, studyDeckOnLeft: onLeft } : prev
+    );
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studyDeckOnLeft: onLeft }),
+    });
+    if (!res.ok) {
+      await refreshProfile();
+      throw new Error("Could not update study layout preference");
+    }
+  }, [refreshProfile]);
+
   const value = useMemo(
     () => ({
       profile,
       loading,
       refreshProfile,
       setKeyboardShortcutsEnabled,
+      setStudyDeckOnLeft,
       geminiModalOpen,
       openGeminiModal: () => setGeminiModalOpen(true),
       closeGeminiModal: () => setGeminiModalOpen(false),
@@ -108,6 +130,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
       loading,
       refreshProfile,
       setKeyboardShortcutsEnabled,
+      setStudyDeckOnLeft,
       geminiModalOpen,
     ]
   );

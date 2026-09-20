@@ -14,6 +14,7 @@ export function ProfileMenu({ username: usernameProp }: ProfileMenuProps) {
   const {
     profile,
     setKeyboardShortcutsEnabled,
+    setStudyDeckOnLeft,
     openGeminiModal,
   } = useUserProfile();
   const [open, setOpen] = useState(false);
@@ -112,6 +113,22 @@ export function ProfileMenu({ username: usernameProp }: ProfileMenuProps) {
               checked={profile?.keyboardShortcutsEnabled ?? false}
               onChange={(e) => {
                 void setKeyboardShortcutsEnabled(e.target.checked).catch(() => {});
+              }}
+            />
+          </label>
+
+          <label className="profile-dropdown-toggle" role="menuitemcheckbox">
+            <span>
+              Study cards on left
+              <span className="profile-dropdown-hint">
+                Off = topics list on left · cards on right
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={profile?.studyDeckOnLeft ?? true}
+              onChange={(e) => {
+                void setStudyDeckOnLeft(e.target.checked).catch(() => {});
               }}
             />
           </label>
